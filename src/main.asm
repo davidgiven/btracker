@@ -93,13 +93,17 @@ guard PATTERN_DATA
 .playloop
     jsr process_tones
     jsr update_all_channels
-    lda #19
-    jsr OSBYTE
     
+    sei
 .delayloop
     lda #KBD_IRQ
     bit SHEILA+SYSTEM_VIA+IFR
     bne keypress
+
+    lda #CLOCK_IRQ
+    bit SHEILA+SYSTEM_VIA+IFR
+    beq delayloop
+    cli
 
     dec tickcount
     bne playloop
@@ -121,6 +125,7 @@ guard PATTERN_DATA
     jmp current_note_has_changed
 
 .keypress
+    cli
     jsr do_keypress
     jmp current_note_has_changed
 }
@@ -1147,7 +1152,7 @@ org MUSIC_DATA
 org PATTERN_DATA
     equb 24, &0f, 27, &0f, 30, &0f, 33, &0f
     equb 00, &0f, 00, &0f, 00, &0f, 00, &0f
-;   equb &ff, 0,  &ff, 0,  &ff, 0,  &ff, 0
+    equb &ff, 0,  &ff, 0,  &ff, 0,  &ff, 0
 
 save "data", MUSIC_DATA, &7c00
 
