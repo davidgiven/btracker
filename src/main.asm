@@ -252,11 +252,33 @@ guard PATTERN_DATA
 
 	ldy #0
 	lda (disptr), y
+	tax
+	lda note_decode_table, x
+	bmi not_a_note
+	pha
+	and #&0f
+	asl a
+	tay
+	lda note_name_table, y
+	jsr print_char
+	iny
+	lda note_name_table, y
+	jsr print_char
+	pla
+	lsr a
+	lsr a
+	lsr a
+	lsr a
+	jsr print_h4
+	jmp next
+
+.not_a_note
+	lda #'?'
+	jsr print_char
+	txa
 	jsr print_h8
 
-	lda #0
-	jsr print_h4
-
+.next
 	inc scrptr+0
 	bne t1
 	inc scrptr+1
@@ -273,14 +295,14 @@ guard PATTERN_DATA
 	rts
 }
 
-; Prints the hex nibble A at scrptr, advancing y
+; Prints the hex nibble A at scrptr
 .print_h4
-{
 	and #&0f
 	jsr nibble_to_ascii
+.print_char
 	ldy #0
 	sta (scrptr), y
-
+{
 	inc scrptr+0
 	bne noinc
 	inc scrptr+1
@@ -288,7 +310,7 @@ guard PATTERN_DATA
 	rts
 }
 
-; Prints A at scrptr, advancing y
+; Prints A at scrptr
 .print_h8
 {
 	pha
@@ -527,18 +549,18 @@ guard PATTERN_DATA
 }
 
 .note_name_table
-	equs "C "
+	equs "C-"
 	equs "C#"
-	equs "D "
+	equs "D-"
 	equs "D#"
-	equs "E "
-	equs "F "
+	equs "E-"
+	equs "F-"
 	equs "F#"
-	equs "G "
+	equs "G-"
 	equs "G#"
-	equs "A "
+	equs "A-"
 	equs "A#"
-	equs "B "
+	equs "B-"
 
 ; --- End of main program ---------------------------------------------------
 
@@ -624,7 +646,7 @@ org PATTERN_DATA
 
 	; Pattern 0
 
-	equb 24, &0f, 25, &0f, 26, &0f, 27, &0f
+	equb 24, &0f, 27, &0f, 30, &0f, 33, &0f
 
 save "data", PATTERN_DATA, &7c00
 
