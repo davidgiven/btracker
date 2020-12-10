@@ -2,6 +2,7 @@
 OSRDCH	= &FFE0
 OSWRCH	= &FFEE
 OSBYTE	= &FFF4
+OSFILE  = &FFDD
 SHEILA  = &FE00
 
 IFR		= 13
@@ -28,7 +29,7 @@ PATTERN_DATA = &7c00 - (NUM_PATTERNS * NUM_STEPS * ROW_LENGTH)
 
 ; Notes
 
-NUM_PITCHES = 159
+NUM_PITCHES = 201
 
 ; Screen layout.
 
@@ -60,6 +61,7 @@ guard PATTERN_DATA
 	lda #&ff
 	sta volume + 0
 	sta volume + 1
+	sta volume + 2
 	jsr reset_row_pointer
 	ldx #0
 	ldy #&7c
@@ -74,7 +76,7 @@ guard PATTERN_DATA
 	sta pitch+1
 	txa
 	clc
-	adc #2
+	adc #4
 	sta pitch+2
 	txa
 	pha
@@ -191,6 +193,14 @@ guard PATTERN_DATA
 	lda #80-6
 	jsr retard_scrptr
 	dec disrow
+
+	; disptr has been advanced to the next row, so to get the previous row,
+	; we need to go back two..
+
+	lda disptr+0
+	sec
+	sbc #ROW_LENGTH*2
+	sta disptr+0
 
 	pla
 	sec
@@ -357,7 +367,6 @@ guard PATTERN_DATA
 ; Updates the sound chip with the data in zero page.
 
 .update_all_channels
-print ~update_all_channels
 {
 	ldx #0 ; channel
 .loop
@@ -447,10 +456,10 @@ print ~update_all_channels
 ;
 ; 1. Internal -> MIDI
 ;
-; Internally we use numbers from 0 up, where each number is half a semitone and 0 is
-; MIDI note 48, or C3. (This is the lowest note the sound chip can produce.) The
-; highest note is MIDI note 127, or G9. This gives us a range of 80 MIDI notes,
-; occupying internal pitches 0..158.
+; Internally we use numbers from 0 up, where each number is a third of a
+; semitone and 0 is MIDI note 48, or C3. (This is the lowest note the sound
+; chip can produce.) The highest note is MIDI note 115, or G8. This gives us a
+; range of 67 MIDI notes, occupying internal pitches 0..201.
 ;
 ; Middle C (C4) is midi note 60, or 261.626Hz, which means it's (60-48)*2 = 24
 ; in our internal numbering.
@@ -490,7 +499,7 @@ print ~update_all_channels
 .pitch_cmd_table_2 org P% + NUM_PITCHES
 {
 	for i, 0, NUM_PITCHES-1
-		midi = i/2 + 48
+		midi = i/3 + 48
 		freq = 440 * 2^((midi-69)/12)
 		pitch10 = 4000000 / (32 * freq)
 		command1 = (pitch10 and &0f) or &80
@@ -501,6 +510,35 @@ print ~update_all_channels
 		equb command2
 	next
 }
+
+; For every note, this table contains a BCD-encoded representation of octave
+; (top nibble) and note (bottom nibble), where the nibble 0 is a C. If the
+; note is not representable (i.e. not a whole note), the result is &ff.
+.note_decode_table
+{
+	for i, 0, NUM_PITCHES-1
+		if (i mod 3) <> 0
+			equb &ff
+		else
+			semis = i div 3
+			equb ((semis div 12)<<4) or (semis mod 12)
+		endif
+	next
+}
+
+.note_name_table
+	equs "C "
+	equs "C#"
+	equs "D "
+	equs "D#"
+	equs "E "
+	equs "F "
+	equs "F#"
+	equs "G "
+	equs "G#"
+	equs "A "
+	equs "A#"
+	equs "B "
 
 ; --- End of main program ---------------------------------------------------
 
@@ -552,6 +590,13 @@ print ~update_all_channels
 	lda #64
 	sta CRTC_DATA
 
+	; Load the data file.
+
+	lda #&ff
+	ldx #lo(load_cb)
+	ldy #hi(load_cb)
+	jsr OSFILE
+
 	; Launch the program proper.
 
 	jmp _start
@@ -560,9 +605,26 @@ print ~update_all_channels
 	equb 22, 7 ; mode 7
 .init_vdu_end
 
+.filename
+	equs "data", 13
+.load_cb
+	equw filename
+	equw PATTERN_DATA
+	equw 0
+	equw 0
+	equw 0
+
 ._end
 
 print "top=", ~_top, " data=", ~PATTERN_DATA
 save "!boot", _start, _end, _top
 
+clear PATTERN_DATA, &7c00
+org PATTERN_DATA
+
+	; Pattern 0
+
+	equb 24, &0f, 25, &0f, 26, &0f, 27, &0f
+
+save "data", PATTERN_DATA, &7c00
 
