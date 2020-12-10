@@ -7,6 +7,9 @@ SHEILA  = &FE00
 IFR		= 13
 IER		= 14
 
+CRTC_ADDRESS = SHEILA + &00 + 0
+CRTC_DATA    = SHEILA + &00 + 1
+
 SYSTEM_VIA 	= &40
 KBD_IRQ    	= 1<<0
 VSYNC_IRQ	= 1<<1
@@ -23,19 +26,23 @@ NOTE_LENGTH = 2 ; pitch, volume/tone; or: command, param
 ROW_LENGTH = NOTE_LENGTH * NUM_VOICES
 PATTERN_DATA = &7c00 - (NUM_PATTERNS * NUM_STEPS * ROW_LENGTH)
 
+; Notes
+
+NUM_PITCHES = 159
+
 ; Screen layout.
 
-MIDDLE_ROW = 10
-MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40)
+MIDDLE_ROW = 16
+MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40) + 1
 
 ;  0123456789012345678901234567890123456789
 ;     00 : F# 8f | F# 8f | F# 8f | XX 8f
 org &00
-.pitchlo    equb 0, 0, 0
-.pitchhi	equb 0, 0, 0
+.pitch      equb 0, 0, 0
 .volume		equb 0, 0, 0
 .w	   		equb 0
 .q			equb 0
+.p			equb 0
 .rowptr     equw 0			; pointer to current row
 .patternno  equb 0			; current pattern number
 .rowno		equb 0			; current row number
@@ -46,15 +53,31 @@ guard &9f
 
 org &1b00
 guard PATTERN_DATA
+
+; --- Main program ----------------------------------------------------------
+
 ._start
-	lda #&80
-	sta pitchhi + 0
 	lda #&ff
 	sta volume + 0
+	sta volume + 1
 	jsr reset_row_pointer
+	ldx #0
+	ldy #&7c
+	jsr gotoxy
 
+	ldx #0
 .main_loop
-	inc pitchhi + 0
+	stx pitch+0
+	txa
+	clc
+	adc #1
+	sta pitch+1
+	txa
+	clc
+	adc #2
+	sta pitch+2
+	txa
+	pha
 	jsr update_all_channels
 	jsr draw_screen
 
@@ -62,6 +85,15 @@ guard PATTERN_DATA
 	bit SHEILA+SYSTEM_VIA+IFR
 	bne key_pressed
 
+	lda #19
+	jsr OSBYTE
+
+	pla
+	tax
+	inx
+	cpx #NUM_PITCHES
+	bne main_loop
+	ldx #0
 	jmp main_loop
 
 .key_pressed
@@ -175,16 +207,16 @@ guard PATTERN_DATA
 	bcs blank_row
 
 	jsr print_h8
-	lda #3
+	lda #2
 	jsr advance_scrptr
 	jsr draw_note
-	lda #3
+	lda #2
 	jsr advance_scrptr
 	jsr draw_note
-	lda #3
+	lda #2
 	jsr advance_scrptr
 	jsr draw_note
-	lda #3
+	lda #2
 	jsr advance_scrptr
 	jsr draw_note
 	rts
@@ -212,6 +244,9 @@ guard PATTERN_DATA
 	lda (disptr), y
 	jsr print_h8
 
+	lda #0
+	jsr print_h4
+
 	inc scrptr+0
 	bne t1
 	inc scrptr+1
@@ -228,6 +263,21 @@ guard PATTERN_DATA
 	rts
 }
 
+; Prints the hex nibble A at scrptr, advancing y
+.print_h4
+{
+	and #&0f
+	jsr nibble_to_ascii
+	ldy #0
+	sta (scrptr), y
+
+	inc scrptr+0
+	bne noinc
+	inc scrptr+1
+.noinc
+	rts
+}
+
 ; Prints A at scrptr, advancing y
 .print_h8
 {
@@ -236,19 +286,13 @@ guard PATTERN_DATA
 	lsr a
 	lsr a
 	lsr a
-	jsr nibble_to_ascii
-	ldy #0
-	sta (scrptr), y
+	jsr print_h4
 
 	pla
 	and #&0f
-	jsr nibble_to_ascii
-	ldy #1
-	sta (scrptr), y
-
-	lda #2
-	; fall through
+	jmp print_h4
 }
+
 ; Advances the screen pointer by A bytes.
 .advance_scrptr
 {
@@ -287,6 +331,8 @@ guard PATTERN_DATA
 	rts
 }
 
+; --- Playback --------------------------------------------------------------
+
 ; Cue up a new pattern.
 
 .reset_row_pointer
@@ -301,60 +347,52 @@ guard PATTERN_DATA
 	rts
 }
 
+; Copy the current note at rowptr to zero page.
+
+.play_current_note
+{
+	
+}
+
 ; Updates the sound chip with the data in zero page.
 
 .update_all_channels
+print ~update_all_channels
 {
-	ldy #0 ; channel
+	ldx #0 ; channel
 .loop
 	; Command byte and low four bits of pitch
 
-	tya
-	asl a
-	asl a
-	asl a
-	asl a
-	asl a
-	ora #&80		; command byte for tone
+	txa
+	lsr a
+	ror a
+	ror a
+	ror a
 	sta w
-
-	lda pitchhi, y
-	and #&03
-	clc
-	rol a
-	rol a
-	rol a
-	sta q
-	lda pitchlo, y
-	and #&c0
-	lsr a
-	lsr a
-	ora q
-	ora w
+	ldy pitch, x	; get pitch byte
+	ora pitch_cmd_table_1, y
 	jsr poke_sound_chip
 
-	; High four bits of pitch
+	; High six bits.
 
-	lda pitchhi, y
-	lsr a
-	lsr a
+	lda pitch_cmd_table_2, y
 	jsr poke_sound_chip
 
 	; Volume byte
 
 	sec
 	lda #&ff
-	sbc volume, y
+	sbc volume, x
 	lsr a
 	lsr a
 	lsr a
 	lsr a
 	ora w
-	ora #&10
+	ora #&90
 	jsr poke_sound_chip
 
-	iny
-	cpy #3
+	inx
+	cpx #3
 	bne loop
 
 	rts
@@ -388,6 +426,83 @@ guard PATTERN_DATA
 	cli				; interrupts on
 	rts
 }
+
+; Moves the cursor to X, Y.
+.gotoxy
+{
+	lda #14
+	sta CRTC_ADDRESS
+	txa
+	sta CRTC_DATA
+	lda #15
+	sta CRTC_ADDRESS
+	tya
+	sta CRTC_DATA
+	rts
+}
+
+; Note lookup table.
+;
+; This works in three parts.
+;
+; 1. Internal -> MIDI
+;
+; Internally we use numbers from 0 up, where each number is half a semitone and 0 is
+; MIDI note 48, or C3. (This is the lowest note the sound chip can produce.) The
+; highest note is MIDI note 127, or G9. This gives us a range of 80 MIDI notes,
+; occupying internal pitches 0..158.
+;
+; Middle C (C4) is midi note 60, or 261.626Hz, which means it's (60-48)*2 = 24
+; in our internal numbering.
+;
+; 2. MIDI -> frequency
+;
+; MIDI notes can be converted to a frequency with:
+;
+;   freq = 440 * 2^((midi-69)/12)
+;
+; 3. Frequency -> chip pitch
+;
+; The BBC's sound chip produces tones like this:
+;
+;                           Input clock (Hz)
+;   Frequency (Hz) = -----------------------------
+;                     2 x register value x divider
+;
+; For the BBC Micro, the clock is 4MHz and the divider is 16, so that
+; gives us:
+;
+;   freq = 4M / (32 * n)
+;
+; ...so we can calculate n with:
+;
+;   n = 4M / (32 * freq)
+;
+; See https://www.smspower.org/Development/SN76489#ToneChannels
+;
+; 4. Chip pitch -> command
+;
+; To actually set the pitch, we need to send two bytes to the chip; the first
+; contains the bottom four bits, the second the top ten bits. Actually doing
+; this bit shuffling at runtime is a waste of time so we precompute it.
+
+.pitch_cmd_table_1 org P% + NUM_PITCHES
+.pitch_cmd_table_2 org P% + NUM_PITCHES
+{
+	for i, 0, NUM_PITCHES-1
+		midi = i/2 + 48
+		freq = 440 * 2^((midi-69)/12)
+		pitch10 = 4000000 / (32 * freq)
+		command1 = (pitch10 and &0f) or &80
+		command2 = pitch10 >> 4
+		org pitch_cmd_table_1 + i
+		equb command1
+		org pitch_cmd_table_2 + i
+		equb command2
+	next
+}
+
+; --- End of main program ---------------------------------------------------
 
 ; Everything from _top onward is only used for initialisation and is then
 ; overwritten with data.
@@ -432,13 +547,17 @@ guard PATTERN_DATA
 	ldx #0			; ...disabled
 	jsr OSBYTE
 
+	lda #10
+	sta CRTC_ADDRESS
+	lda #64
+	sta CRTC_DATA
+
 	; Launch the program proper.
 
 	jmp _start
 
 .init_vdu
-	equb 22, 7
-	equb 23, 1, 0, 0, 0, 0, 0, 0, 0, 0
+	equb 22, 7 ; mode 7
 .init_vdu_end
 
 ._end
