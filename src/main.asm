@@ -26,6 +26,7 @@ NOTE_LENGTH = 2 ; pitch, volume/tone; or: command, param
 
 ROW_LENGTH = NOTE_LENGTH * NUM_VOICES
 PATTERN_DATA = &7c00 - (NUM_PATTERNS * NUM_STEPS * ROW_LENGTH)
+MUSIC_DATA = PATTERN_DATA - &100
 
 ; Notes
 
@@ -58,6 +59,7 @@ org &00
 .disrow     equb 0          ; row number being displayed
 .scrptr     equw 0          ; screen pointer
 .cursorx    equb 0          ; position of cursor (0-15)
+.tickcount  equb 0          ; ticks left in the current note
 guard &9f
 
 mapchar '#', 95             ; mode 7 character set
@@ -84,29 +86,52 @@ guard PATTERN_DATA
 .current_note_has_changed
     jsr play_current_note
 .main_loop
-    jsr process_tones
-    jsr update_all_channels
+{
     jsr draw_screen
 
-    ldy cursorx
-    ldx editor_cursor_table, y
-    ldy #hi(MIDDLE_ROW_ADDRESS)
-    jsr move_cursor
-
-    lda #KBD_IRQ
-    bit SHEILA+SYSTEM_VIA+IFR
-    bne key_pressed
-
+    ; Play the appropriate number of ticks of music.
+.playloop
+    jsr process_tones
+    jsr update_all_channels
     lda #19
     jsr OSBYTE
-    jmp main_loop
+    
+.delayloop
+    lda #KBD_IRQ
+    bit SHEILA+SYSTEM_VIA+IFR
+    bne keypress
 
-.key_pressed
+    dec tickcount
+    bne playloop
+
+    ; If we fall out the bottom, we're out of ticks, and so need to advance to
+    ; the next row.
+
+    lda rowptr+0
+    clc
+    adc #ROW_LENGTH
+    sta rowptr+0
+    
+    lda rowno
+    clc
+    adc #1
+    and #&1f
+    sta rowno
+
+    jmp current_note_has_changed
+
+.keypress
+    jsr do_keypress
+    jmp current_note_has_changed
+}
+
+.do_keypress
+{
     lda #&81
     ldx #0
     ldy #0
     jsr OSBYTE
-    bcs main_loop
+    bcs ret
 
     cpx #139
     beq key_up
@@ -122,6 +147,10 @@ guard PATTERN_DATA
     beq key_increment
     cpx #45
     beq key_decrement
+    cpx #60
+    beq tempo_down
+    cpx #62
+    beq tempo_up
 
     {
         cpx #'0'
@@ -139,12 +168,14 @@ guard PATTERN_DATA
     .no
     }
     
-    jmp main_loop
+.ret
+    rts
+}
 
 .key_up
 {
     lda rowno
-    beq main_loop
+    beq ret
 
     dec rowno
 
@@ -152,14 +183,15 @@ guard PATTERN_DATA
     lda rowptr+0
     sbc #ROW_LENGTH
     sta rowptr+0
-    jmp current_note_has_changed
+.ret
+    rts
 }
 
 .key_down
 {
     lda rowno
     cmp #NUM_STEPS-1
-    beq main_loop
+    beq ret
 
     inc rowno
 
@@ -167,7 +199,8 @@ guard PATTERN_DATA
     lda rowptr+0
     adc #ROW_LENGTH
     sta rowptr+0
-    jmp current_note_has_changed
+.ret
+    rts
 }
 
 .key_left
@@ -176,7 +209,7 @@ guard PATTERN_DATA
     beq ret
     dec cursorx
 .ret
-    jmp main_loop
+    rts
 }
 
 .key_right
@@ -186,7 +219,7 @@ guard PATTERN_DATA
     beq ret
     inc cursorx
 .ret
-    jmp main_loop
+    rts
 }
 
 .key_tab
@@ -196,21 +229,19 @@ guard PATTERN_DATA
     adc #4
     and #&0f
     sta cursorx
-    jmp main_loop
+    rts
 }
 
 .key_increment
 {
     lda #1
-    jsr adjust_value
-    jmp current_note_has_changed
+    jmp adjust_value
 }
 
 .key_decrement
 {
     lda #lo(-1)
-    jsr adjust_value
-    jmp current_note_has_changed
+    jmp adjust_value
 }
 
 .number_key
@@ -218,8 +249,7 @@ guard PATTERN_DATA
     txa
     sec
     sbc #'0'
-    jsr set_value
-    jmp current_note_has_changed
+    jmp set_value
 }
 
 .letter_key
@@ -227,8 +257,25 @@ guard PATTERN_DATA
     txa
     sec
     sbc #'A'-10
-    jsr set_value
-    jmp current_note_has_changed
+    jmp set_value
+}
+
+.tempo_down
+{
+    dec tempo
+    bne ret
+    inc tempo
+.ret
+    rts
+}
+
+.tempo_up
+{
+    inc tempo
+    bne ret
+    dec tempo
+.ret
+    rts
 }
 
 ; --- Editor logic ----------------------------------------------------------
@@ -545,6 +592,13 @@ guard PATTERN_DATA
     sbc #1
     bne up_loop
 
+    ; Place the cursor.
+
+    ldy cursorx
+    ldx editor_cursor_table, y
+    ldy #hi(MIDDLE_ROW_ADDRESS)
+    jsr move_cursor
+
     rts
 }
 
@@ -773,6 +827,9 @@ guard PATTERN_DATA
     inx
     cpx #3
     bne loop
+
+    lda tempo
+    sta tickcount
     rts
 }
 
@@ -1070,7 +1127,7 @@ guard PATTERN_DATA
     equs "data", 13
 .load_cb
     equw filename
-    equw PATTERN_DATA
+    equw MUSIC_DATA
     equw 0
     equw 0
     equw 0
@@ -1080,16 +1137,19 @@ guard PATTERN_DATA
 print "top=", ~_top, " data=", ~PATTERN_DATA
 save "!boot", _start, _end, _top
 
-clear PATTERN_DATA, &7c00
-org PATTERN_DATA
+clear MUSIC_DATA, &7c00
+org MUSIC_DATA
+    ; Header
+.tempo  equb 2
 
     ; Pattern 0
 
+org PATTERN_DATA
     equb 24, &0f, 27, &0f, 30, &0f, 33, &0f
     equb 00, &0f, 00, &0f, 00, &0f, 00, &0f
 ;   equb &ff, 0,  &ff, 0,  &ff, 0,  &ff, 0
 
-save "data", PATTERN_DATA, &7c00
+save "data", MUSIC_DATA, &7c00
 
 ; vim: ts=4 sw=4 et
 
