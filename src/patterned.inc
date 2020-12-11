@@ -1,3 +1,158 @@
+; --- Pattern editor key entry ----------------------------------------------
+
+.do_patterneditor_keypress
+{
+    lda #&81
+    ldx #0
+    ldy #0
+    jsr OSBYTE
+    bcs ret
+
+    cpx #139
+    beq key_up
+    cpx #138
+    beq key_down
+    cpx #136
+    beq key_left
+    cpx #137
+    beq key_right
+    cpx #9
+    beq key_tab
+    cpx #43
+    beq key_increment
+    cpx #45
+    beq key_decrement
+    cpx #60
+    beq tempo_down
+    cpx #62
+    beq tempo_up
+
+    {
+        cpx #'0'
+        blt no
+        cpx #'9'+1
+        blt number_key
+    .no
+    }
+
+    {
+        cpx #'A'
+        blt no
+        cpx #'G'+1
+        blt letter_key
+    .no
+    }
+    
+.ret
+    rts
+
+    .key_up
+    {
+        lda rowno
+        beq ret
+
+        dec rowno
+
+        sec
+        lda rowptr+0
+        sbc #ROW_LENGTH
+        sta rowptr+0
+    .ret
+        rts
+    }
+
+    .key_down
+    {
+        lda rowno
+        cmp #NUM_STEPS-1
+        beq ret
+
+        inc rowno
+
+        clc
+        lda rowptr+0
+        adc #ROW_LENGTH
+        sta rowptr+0
+    .ret
+        rts
+    }
+
+    .key_left
+    {
+        lda cursorx
+        beq ret
+        dec cursorx
+    .ret
+        rts
+    }
+
+    .key_right
+    {
+        lda cursorx
+        cmp #15
+        beq ret
+        inc cursorx
+    .ret
+        rts
+    }
+
+    .key_tab
+    {
+        lda cursorx
+        clc
+        adc #4
+        and #&0f
+        sta cursorx
+        rts
+    }
+
+    .key_increment
+    {
+        lda #1
+        jmp adjust_value
+    }
+
+    .key_decrement
+    {
+        lda #lo(-1)
+        jmp adjust_value
+    }
+
+    .number_key
+    {
+        txa
+        sec
+        sbc #'0'
+        jmp set_value
+    }
+
+    .letter_key
+    {
+        txa
+        sec
+        sbc #'A'-10
+        jmp set_value
+    }
+
+    .tempo_down
+    {
+        dec tempo
+        bne ret
+        inc tempo
+    .ret
+        rts
+    }
+
+    .tempo_up
+    {
+        inc tempo
+        bne ret
+        dec tempo
+    .ret
+        rts
+    }
+}
+
 ; --- Editor logic ----------------------------------------------------------
 
 ; Adjusts the value under the cursor by A.

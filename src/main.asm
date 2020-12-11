@@ -48,21 +48,19 @@ NUM_PITCHES = 201
 MIDDLE_ROW = 16
 MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40) + 1
 
-;  0123456789012345678901234567890123456789
-;     00 : F# 8f | F# 8f | F# 8f | XX 8f
 org &00
-.pitch      equb 0, 0, 0    ; master copy for note
-.volume     equb 0, 0, 0
-.w          equb 0
-.q          equb 0
-.p          equb 0
-.rowptr     equw 0          ; pointer to current row
-.patternno  equb 0          ; current pattern number
-.rowno      equb 0          ; current row number
-.disptr     equw 0          ; pointer to row being displayed
-.disrow     equb 0          ; row number being displayed
-.scrptr     equw 0          ; screen pointer
-.cursorx    equb 0          ; position of cursor (0-15)
+.pitch        equb 0, 0, 0    ; master copy for note
+.volume       equb 0, 0, 0
+.w            equb 0
+.q            equb 0
+.p            equb 0
+.rowptr       equw 0          ; pointer to current row
+.patternno    equb 0          ; current pattern number
+.rowno        equb 0          ; current row number
+.disptr       equw 0          ; pointer to row being displayed
+.disrow       equb 0          ; row number being displayed
+.scrptr       equw 0          ; screen pointer
+.cursorx      equb 0          ; position of cursor (0-15)
 
 ; Used by the interrupt-driven player
 
@@ -135,161 +133,8 @@ guard PATTERN_DATA
 
 .keypress
     cli
-    jsr do_keypress
+    jsr do_patterneditor_keypress
     jmp current_note_has_changed
-}
-
-.do_keypress
-{
-    lda #&81
-    ldx #0
-    ldy #0
-    jsr OSBYTE
-    bcs ret
-
-    cpx #139
-    beq key_up
-    cpx #138
-    beq key_down
-    cpx #136
-    beq key_left
-    cpx #137
-    beq key_right
-    cpx #9
-    beq key_tab
-    cpx #43
-    beq key_increment
-    cpx #45
-    beq key_decrement
-    cpx #60
-    beq tempo_down
-    cpx #62
-    beq tempo_up
-
-    {
-        cpx #'0'
-        blt no
-        cpx #'9'+1
-        blt number_key
-    .no
-    }
-
-    {
-        cpx #'A'
-        blt no
-        cpx #'G'+1
-        blt letter_key
-    .no
-    }
-    
-.ret
-    rts
-}
-
-.key_up
-{
-    lda rowno
-    beq ret
-
-    dec rowno
-
-    sec
-    lda rowptr+0
-    sbc #ROW_LENGTH
-    sta rowptr+0
-.ret
-    rts
-}
-
-.key_down
-{
-    lda rowno
-    cmp #NUM_STEPS-1
-    beq ret
-
-    inc rowno
-
-    clc
-    lda rowptr+0
-    adc #ROW_LENGTH
-    sta rowptr+0
-.ret
-    rts
-}
-
-.key_left
-{
-    lda cursorx
-    beq ret
-    dec cursorx
-.ret
-    rts
-}
-
-.key_right
-{
-    lda cursorx
-    cmp #15
-    beq ret
-    inc cursorx
-.ret
-    rts
-}
-
-.key_tab
-{
-    lda cursorx
-    clc
-    adc #4
-    and #&0f
-    sta cursorx
-    rts
-}
-
-.key_increment
-{
-    lda #1
-    jmp adjust_value
-}
-
-.key_decrement
-{
-    lda #lo(-1)
-    jmp adjust_value
-}
-
-.number_key
-{
-    txa
-    sec
-    sbc #'0'
-    jmp set_value
-}
-
-.letter_key
-{
-    txa
-    sec
-    sbc #'A'-10
-    jmp set_value
-}
-
-.tempo_down
-{
-    dec tempo
-    bne ret
-    inc tempo
-.ret
-    rts
-}
-
-.tempo_up
-{
-    inc tempo
-    bne ret
-    dec tempo
-.ret
-    rts
 }
 
 include "src/patterned.inc"
@@ -510,97 +355,7 @@ include "src/player.inc"
 ; overwritten with data.
 
 ._top
-    ; Initialise the screen.
-
-    {
-        ldy #0
-        ldx #init_vdu_end - init_vdu
-    .loop
-        lda init_vdu, y
-        jsr OSWRCH
-        iny
-        dex
-        bne loop
-    }
-
-    ; Wipe zero page.
-
-    {
-        ldx #&a0
-        lda #0
-    .loop
-        sta &ff, x
-        dex
-        bne loop
-    }
-
-    ; Various bits of system configuration.
-
-    lda #4          ; cursor keys
-    ldx #1          ; ...make characters
-    jsr OSBYTE
-
-    lda #229        ; ESCAPE key
-    ldx #1          ; ...makes character
-    ldy #0
-    jsr OSBYTE
-
-    lda #16         ; ADC channels
-    ldx #0          ; ...disabled
-    jsr OSBYTE
-
-    lda #10
-    sta CRTC_ADDRESS
-    lda #64
-    sta CRTC_DATA
-
-    ; Load the data file.
-
-    lda #&ff
-    ldx #lo(load_cb)
-    ldy #hi(load_cb)
-    jsr OSFILE
-
-    ; We use timer 1 of the user VIA as a free-running timer, used to monitor
-    ; the speed of the interrupt-driven player. It's zeroed at the beginning of
-    ; an interrupt and read at the end.
-
-    lda #&60                     ; disable timer interrupts
-    sta SHEILA+USER_VIA+VIA_IER     
-    lda #&ff                     ; reset to &ffff on rollover
-    sta SHEILA+USER_VIA+VIA_T1LL
-    sta SHEILA+USER_VIA+VIA_T1LH
-
-    ; Install the player interrupt handler (which will start playing immediately).
-
-    sei
-    lda IRQ1V+0
-    sta oldirqvector+0
-    lda IRQ1V+1
-    sta oldirqvector+1
-    lda #lo(player_irq_cb)
-    sta IRQ1V+0
-    lda #hi(player_irq_cb)
-    sta IRQ1V+1
-    cli
-
-    ; Launch the program proper.
-
-    jmp _start
-
-.init_vdu
-    equb 22, 7 ; mode 7
-.init_vdu_end
-
-.filename
-    equs "data", 13
-.load_cb
-    equw filename
-    equw MUSIC_DATA
-    equw 0
-    equw 0
-    equw 0
-
+include "src/init.inc";
 ._end
 
 print "top=", ~_top, " data=", ~PATTERN_DATA
