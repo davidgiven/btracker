@@ -50,8 +50,8 @@ A_3  = 3*36+27
 AS_3 = 3*36+30
 B_3  = 3*36+33
 
-BLANK = 255
-OFF = 254
+BLANK = FIRST_COMMAND + ('B' - 'A')
+OFF = FIRST_COMMAND + ('O' - 'A')
 
 clear MUSIC_DATA, &7c00
 org MUSIC_DATA

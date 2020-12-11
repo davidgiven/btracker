@@ -444,7 +444,7 @@
     pha
 
     jsr draw_row
-    lda #6
+    lda #5
     jsr advance_scrptr
     inc disrow
 
@@ -474,7 +474,7 @@
     pha
 
     jsr draw_row
-    lda #80-6
+    lda #80-5
     jsr retard_scrptr
     dec disrow
 
@@ -511,13 +511,13 @@
     lda #2
     jsr advance_scrptr
     jsr draw_note
-    lda #2
+    lda #1
     jsr advance_scrptr
     jsr draw_note
-    lda #2
+    lda #1
     jsr advance_scrptr
     jsr draw_note
-    lda #2
+    lda #1
     jsr advance_scrptr
     jsr draw_note
     rts
@@ -530,7 +530,7 @@
     dey
     bpl loop
 
-    lda #40-6
+    lda #40-5
     jmp advance_scrptr
 }
 
@@ -543,6 +543,8 @@
 
     ldy #0
     lda (disptr), y
+    cmp #FIRST_COMMAND
+    bge is_a_command
     tax
     lda note_decode_table, x
     bmi not_a_note
@@ -584,9 +586,51 @@
     lda (disptr), y
     jsr print_h8
 
+.done
+    lda #128+7
+    jsr print_char
     inc disptr+0
     inc disptr+0
     rts
+
+.is_a_command
+    cmp #FIRST_COMMAND + ('O' - 'A')
+    beq off_command
+    cmp #FIRST_COMMAND + ('B' - 'A')
+    beq blank_command
+
+    pha
+    lda #128+3
+    jsr print_char
+    jsr print_char
+    pla
+    sec
+    sbc #FIRST_COMMAND - 'A'
+    jsr print_char
+    jmp next
+
+.off_command
+    lda #'='
+    pha
+    jmp banner
+
+.blank_command
+    lda #'.'
+    pha
+.banner
+    {
+        lda #' '
+        jsr print_char
+        pla
+        ldx #3
+    .loop
+        jsr print_char
+        dex
+        bpl loop
+        lda #' '
+        jsr print_char
+        jmp done
+    }
 }
 
 ; vim: ts=4 sw=4 et ft=asm

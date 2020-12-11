@@ -41,6 +41,7 @@ MUSIC_DATA = PATTERN_DATA - &100
 ; Notes
 
 NUM_PITCHES = 201
+FIRST_COMMAND = 256-26
 
 ; Screen layout.
 
