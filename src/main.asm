@@ -5,13 +5,23 @@ OSBYTE  = &FFF4
 OSFILE  = &FFDD
 SHEILA  = &FE00
 
-IFR     = 13
-IER     = 14
+IRQ1V   = &0204
+
+VIA_T1CL    = 4
+VIA_T1CH    = 5
+VIA_T1LL    = 6
+VIA_T1LH    = 7
+VIA_ACR     = 11
+VIA_PCR     = 12
+VIA_IFR     = 13
+VIA_IER     = 14
 
 CRTC_ADDRESS = SHEILA + &00 + 0
 CRTC_DATA    = SHEILA + &00 + 1
 
 SYSTEM_VIA  = &40
+USER_VIA    = &60
+
 KBD_IRQ     = 1<<0
 VSYNC_IRQ   = 1<<1
 ADC_IRQ     = 1<<4
@@ -43,12 +53,6 @@ MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40) + 1
 org &00
 .pitch      equb 0, 0, 0    ; master copy for note
 .volume     equb 0, 0, 0
-.cpitch     equb 0, 0, 0    ; current copy (based on tone procedure)
-.cvolume    equb 0, 0, 0
-.rpitch     equb 0, 0, 0    ; what the chip is currently playing
-.rvolume    equb 0, 0, 0
-.tone       equb 0, 0, 0    ; current tone
-.tonet      equb 0, 0, 0    ; tone tick count
 .w          equb 0
 .q          equb 0
 .p          equb 0
@@ -59,7 +63,18 @@ org &00
 .disrow     equb 0          ; row number being displayed
 .scrptr     equw 0          ; screen pointer
 .cursorx    equb 0          ; position of cursor (0-15)
-.tickcount  equb 0          ; ticks left in the current note
+
+; Used by the interrupt-driven player
+
+.cpitch        equb 0, 0, 0    ; current copy (based on tone procedure)
+.cvolume       equb 0, 0, 0
+.rpitch        equb 0, 0, 0    ; what the chip is currently playing
+.rvolume       equb 0, 0, 0
+.tone          equb 0, 0, 0    ; current tone
+.tonet         equb 0, 0, 0    ; tone tick count
+.oldirqvector  equw 0          ; previous vector in chain
+.tickcount     equb 0          ; ticks left in the current note
+
 guard &9f
 
 mapchar '#', 95             ; mode 7 character set
@@ -90,23 +105,17 @@ guard PATTERN_DATA
     jsr draw_screen
 
     ; Play the appropriate number of ticks of music.
+
+    lda #19
+    jsr OSBYTE
+
 .playloop
-    jsr process_tones
-    jsr update_all_channels
-    
-    sei
-.delayloop
     lda #KBD_IRQ
-    bit SHEILA+SYSTEM_VIA+IFR
+    bit SHEILA+SYSTEM_VIA+VIA_IFR
     bne keypress
 
-    lda #CLOCK_IRQ
-    bit SHEILA+SYSTEM_VIA+IFR
-    beq delayloop
-    cli
-
-    dec tickcount
-    bne playloop
+    lda tickcount
+    bpl playloop
 
     ; If we fall out the bottom, we're out of ticks, and so need to advance to
     ; the next row.
@@ -763,24 +772,7 @@ guard PATTERN_DATA
     rts
 }
 
-; --- Tone management -------------------------------------------------------
-
-.process_tones
-{
-    ldx #0
-
-.loop
-    lda pitch, x
-    sta cpitch, x
-
-    lda volume, x
-    sta cvolume, x
-
-    inx
-    cpx #3
-    bne loop
-    rts
-}
+include "src/player.inc"
 
 ; --- Playback --------------------------------------------------------------
 
@@ -804,6 +796,7 @@ guard PATTERN_DATA
 {
     ldy #0
     ldx #0
+    sei             ; atomic wrt the interrupt-driven player
 
 .loop
     lda (rowptr), y
@@ -835,85 +828,7 @@ guard PATTERN_DATA
 
     lda tempo
     sta tickcount
-    rts
-}
-
-; Updates the sound chip with the current data, after tone processing.
-
-.update_all_channels
-{
-    ldx #0 ; channel
-.loop
-    ; Command byte and low four bits of pitch
-
-    txa
-    lsr a
-    ror a
-    ror a
-    ror a
-    sta w
-
-    lda cpitch, x   ; get pitch byte
-    cmp rpitch, x   ; chip already set for this pitch?
-    beq do_volume   ; yes, skip write and go straight for volume
-    sta rpitch, x   ; update current value
-    tay
-    lda w
-    ora pitch_cmd_table_1, y
-    jsr poke_sound_chip
-
-    ; High six bits.
-
-    lda pitch_cmd_table_2, y
-    jsr poke_sound_chip
-
-    ; Volume byte
-
-.do_volume
-    lda cvolume, x  ; get volume byte
-    cmp rvolume, x  ; chip already set for this volume?
-    beq next        ; nothing to do
-    sta rvolume, x  ; update current value
-    eor #&0f
-    and #&0f
-    ora w
-    ora #&90
-    jsr poke_sound_chip
-
-.next
-    inx
-    cpx #3
-    bne loop
-
-    rts
-}
-
-; Writes the byte in A to the sound chip.
-; Must be called with interrupts off.
-
-.poke_sound_chip
-{
-    sei             ; interrupts off
-    pha
-
-    lda #&ff
-    sta &fe43       ; VIA direction bits
-
-    pla
-    sta &fe41       ; write byte
-
-    lda #0          ; sound chip write pin low
-    sta $fe40
-    nop             ; delay while the sound chip thinks
-    nop
-    nop
-    nop
-    nop
-    nop
-    lda #$08        ; sound chip write pin high
-    sta $fe40
-
-    cli             ; interrupts on
+    cli
     rts
 }
 
@@ -932,6 +847,10 @@ guard PATTERN_DATA
     sta CRTC_DATA
     rts
 }
+
+; Calls the subroutine whose pointer is in p.
+.jsr_p
+    jmp (p)
 
 ; Note lookup table.
 ;
@@ -1119,6 +1038,29 @@ guard PATTERN_DATA
     ldx #lo(load_cb)
     ldy #hi(load_cb)
     jsr OSFILE
+
+    ; We use timer 1 of the user VIA as a free-running timer, used to monitor
+    ; the speed of the interrupt-driven player. It's zeroed at the beginning of
+    ; an interrupt and read at the end.
+
+    lda #&60                     ; disable timer interrupts
+    sta SHEILA+USER_VIA+VIA_IER     
+    lda #&ff                     ; reset to &ffff on rollover
+    sta SHEILA+USER_VIA+VIA_T1LL
+    sta SHEILA+USER_VIA+VIA_T1LH
+
+    ; Install the player interrupt handler (which will start playing immediately).
+
+    sei
+    lda IRQ1V+0
+    sta oldirqvector+0
+    lda IRQ1V+1
+    sta oldirqvector+1
+    lda #lo(player_irq_cb)
+    sta IRQ1V+0
+    lda #hi(player_irq_cb)
+    sta IRQ1V+1
+    cli
 
     ; Launch the program proper.
 
