@@ -58,6 +58,8 @@ org MUSIC_DATA
     ; Header
 .tempo  equb 12
 
+; Stolen from https://www.youtube.com/watch?v=gUGlMhhasno
+
     ; Pattern 0
 
 org PATTERN_DATA + 0*&100

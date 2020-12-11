@@ -78,7 +78,7 @@
 
     ; Launch the program proper.
 
-    jmp _start
+    jmp main
 
 .init_vdu
     equb 22, 7 ; mode 7
@@ -88,10 +88,8 @@
     equs "data", 13
 .load_cb
     equw filename
-    equw MUSIC_DATA
-    equw 0
-    equw 0
-    equw 0
+    equd MUSIC_DATA
+    equd 0
 }
 
 ; vim: ts=4 sw=4 et ft=asm

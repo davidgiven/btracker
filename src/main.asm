@@ -101,6 +101,8 @@ guard PATTERN_DATA
 ; --- Main program ----------------------------------------------------------
 
 ._start
+    jmp _top
+.main
     jsr setup_screen_for_pattern_editor
     lda #0
     sta rowno
@@ -325,7 +327,7 @@ include "src/init.inc"
 ._end
 
 print "top=", ~_top, " data=", ~PATTERN_DATA
-save "!boot", _start, _end, _top
+save "btracker", _start, _end, _top
 
 include "src/testfile.inc"
 
