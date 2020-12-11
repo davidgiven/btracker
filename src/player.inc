@@ -1,7 +1,6 @@
 ; This is the interrupt-driven player itself. It runs on every 100Hz timer tick.
 
 .player_irq_cb
-print ~player_irq_cb
 {
     cld
     lda &fc
@@ -73,14 +72,14 @@ print ~player_irq_cb
         ror a
         ror a
         ror a
-        sta w
+        sta iw
 
         lda cpitch, x   ; get pitch byte
         cmp rpitch, x   ; chip already set for this pitch?
         beq do_volume   ; yes, skip write and go straight for volume
         sta rpitch, x   ; update current value
         tay
-        lda w
+        lda iw
         ora pitch_cmd_table_1, y
         jsr poke_sound_chip
 
@@ -98,7 +97,7 @@ print ~player_irq_cb
         sta rvolume, x  ; update current value
         eor #&0f
         and #&0f
-        ora w
+        ora iw
         ora #&90
         jsr poke_sound_chip
 
@@ -116,7 +115,6 @@ print ~player_irq_cb
 
 .poke_sound_chip
 {
-    sei             ; interrupts off
     pha
 
     lda #&ff
@@ -136,7 +134,6 @@ print ~player_irq_cb
     lda #$08        ; sound chip write pin high
     sta $fe40
 
-    cli             ; interrupts on
     rts
 }
 

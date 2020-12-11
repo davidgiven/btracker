@@ -49,29 +49,31 @@ MIDDLE_ROW = 16
 MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40) + 1
 
 org &00
-.pitch        equb 0, 0, 0    ; master copy for note
-.volume       equb 0, 0, 0
+.pitch        equb 0, 0, 0, 0  ; master copy for note
+.volume       equb 0, 0, 0, 0
 .w            equb 0
 .q            equb 0
 .p            equb 0
-.rowptr       equw 0          ; pointer to current row
-.patternno    equb 0          ; current pattern number
-.rowno        equb 0          ; current row number
-.disptr       equw 0          ; pointer to row being displayed
-.disrow       equb 0          ; row number being displayed
-.scrptr       equw 0          ; screen pointer
-.cursorx      equb 0          ; position of cursor (0-15)
+.rowptr       equw 0           ; pointer to current row
+.patternno    equb 0           ; current pattern number
+.rowno        equb 0           ; current row number
+.disptr       equw 0           ; pointer to row being displayed
+.disrow       equb 0           ; row number being displayed
+.scrptr       equw 0           ; screen pointer
+.cursorx      equb 0           ; position of cursor (0-15)
+.playing      equb 0           ; are we playing or not?
 
 ; Used by the interrupt-driven player
 
-.cpitch        equb 0, 0, 0    ; current copy (based on tone procedure)
-.cvolume       equb 0, 0, 0
+.cpitch        equb 0, 0, 0, 0 ; current copy (based on tone procedure)
+.cvolume       equb 0, 0, 0, 0
 .rpitch        equb 0, 0, 0    ; what the chip is currently playing
-.rvolume       equb 0, 0, 0
-.tone          equb 0, 0, 0    ; current tone
-.tonet         equb 0, 0, 0    ; tone tick count
+.rvolume       equb 0, 0, 0, 0
+.tone          equb 0, 0, 0, 0 ; current tone
+.tonet         equb 0, 0, 0, 0 ; tone tick count
 .oldirqvector  equw 0          ; previous vector in chain
 .tickcount     equb 0          ; ticks left in the current note
+.iw            equb 0          ; interrupt workspace
 
 guard &9f
 
@@ -115,8 +117,11 @@ guard PATTERN_DATA
     lda tickcount
     bpl playloop
 
-    ; If we fall out the bottom, we're out of ticks, and so need to advance to
-    ; the next row.
+    ; If we fall out the bottom, we're out of ticks. If we're actually playing,
+    ; advance to the next row.
+
+    lda playing
+    beq main_loop
 
     lda rowptr+0
     clc
@@ -355,25 +360,13 @@ include "src/player.inc"
 ; overwritten with data.
 
 ._top
-include "src/init.inc";
+include "src/init.inc"
 ._end
 
 print "top=", ~_top, " data=", ~PATTERN_DATA
 save "!boot", _start, _end, _top
 
-clear MUSIC_DATA, &7c00
-org MUSIC_DATA
-    ; Header
-.tempo  equb 2
-
-    ; Pattern 0
-
-org PATTERN_DATA
-    equb 24, &0f, 27, &0f, 30, &0f, 33, &0f
-    equb 00, &0f, 00, &0f, 00, &0f, 00, &0f
-    equb &ff, 0,  &ff, 0,  &ff, 0,  &ff, 0
-
-save "data", MUSIC_DATA, &7c00
+include "src/testfile.inc"
 
 ; vim: ts=4 sw=4 et
 

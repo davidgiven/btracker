@@ -26,6 +26,10 @@
     beq tempo_down
     cpx #62
     beq tempo_up
+    cpx #32
+    beq playstop
+    cpx #27
+    beq panic
 
     {
         cpx #'0'
@@ -47,33 +51,33 @@
     rts
 
     .key_up
+    print ~key_up
     {
         lda rowno
-        beq ret
-
-        dec rowno
+        sec
+        sbc #1
+        and #&1f
+        sta rowno
 
         sec
         lda rowptr+0
         sbc #ROW_LENGTH
         sta rowptr+0
-    .ret
         rts
     }
 
     .key_down
     {
         lda rowno
-        cmp #NUM_STEPS-1
-        beq ret
-
-        inc rowno
+        clc
+        adc #1
+        and #&1f
+        sta rowno
 
         clc
         lda rowptr+0
         adc #ROW_LENGTH
         sta rowptr+0
-    .ret
         rts
     }
 
@@ -149,6 +153,26 @@
         bne ret
         dec tempo
     .ret
+        rts
+    }
+
+    .playstop
+    {
+        lda playing
+        eor #&ff
+        sta playing
+        rts
+    }
+
+    .panic
+    {
+        lda #0
+        sta playing
+        ldx #2
+    .loop
+        sta volume, x
+        dex
+        bpl loop
         rts
     }
 }
