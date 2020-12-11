@@ -47,12 +47,12 @@ FIRST_COMMAND = 256-26
 
 ; The middle row musn't span a page boundary.
 MIDDLE_ROW = 16
-MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40) + 1
+MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40)
 
 org &00
 .pitch        equb 0, 0, 0, 0  ; master copy for note
 .volume       equb 0, 0, 0, 0
-.w            equb 0
+.w            equw 0
 .q            equb 0
 .p            equb 0
 .rowptr       equw 0           ; pointer to current row
@@ -88,16 +88,20 @@ macro blt label
     bcc label
 endmacro
 
+macro incw label
+    inc label+0
+    bne t
+    inc label+1
+.t
+endmacro
+
 org &1b00
 guard PATTERN_DATA
 
 ; --- Main program ----------------------------------------------------------
 
 ._start
-    lda #&ff
-    sta volume + 0
-    sta volume + 1
-    sta volume + 2
+    jsr setup_screen_for_pattern_editor
     jsr reset_row_pointer
 .current_note_has_changed
     jsr play_current_note

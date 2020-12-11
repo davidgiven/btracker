@@ -425,6 +425,7 @@
 
 ; Draw the entire screen.
 
+LINE_PADDING = 0
 .draw_screen
 {
     lda #lo(MIDDLE_ROW_ADDRESS)
@@ -444,7 +445,7 @@
     pha
 
     jsr draw_row
-    lda #5
+    lda #LINE_PADDING
     jsr advance_scrptr
     inc disrow
 
@@ -474,7 +475,7 @@
     pha
 
     jsr draw_row
-    lda #80-5
+    lda #80-LINE_PADDING
     jsr retard_scrptr
     dec disrow
 
@@ -507,9 +508,37 @@
     cmp #NUM_STEPS
     bcs blank_row
 
+    and #&07
+    beq cyan_background
+    cmp #4
+    beq blue_background
+    lda #' '
+    jsr print_char
+    jsr print_char
+    jmp line
+
+.cyan_background
+    lda #128+1      ; cyan
+    jsr print_char
+    lda #157        ; background
+    jsr print_char
+    jmp line
+
+.blue_background
+    lda #128+4      ; cyan
+    jsr print_char
+    lda #157        ; background
+    jsr print_char
+    jmp line
+
+.line
+    lda #128+3      ; yellow
+    jsr print_char
+    lda disrow
     jsr print_h8
-    lda #2
-    jsr advance_scrptr
+    lda #128+7      ; white
+    jsr print_char
+    jsr print_char
     jsr draw_note
     lda #1
     jsr advance_scrptr
@@ -520,6 +549,10 @@
     lda #1
     jsr advance_scrptr
     jsr draw_note
+    lda #1
+    jsr advance_scrptr
+    lda #156
+    jsr print_char
     rts
 
 .blank_row
@@ -530,8 +563,18 @@
     dey
     bpl loop
 
-    lda #40-5
+    lda #40-LINE_PADDING
     jmp advance_scrptr
+
+.background_color_table
+    equb 128+6
+    equb 128
+    equb 32
+    equb 32
+    equb 128+4
+    equb 32
+    equb 32
+    equb 32
 }
 
 ; Draw the note at disptr to scrptr.
@@ -628,6 +671,86 @@
         jsr print_char
         jmp done
     }
+}
+
+.setup_screen_for_pattern_editor
+{
+    jsr draw_standard_header
+
+    ldx #5
+.loop
+    lda special, x
+    sta &7c00+40+40-7, x
+    dex
+    bpl loop
+
+    ldx #7
+    ldy #19
+    jsr draw_tab
+    lda #lo(data)
+    sta w+0
+    lda #hi(data)
+    sta w+1
+    ldx #80
+    jsr draw_packed
+    rts
+
+.special
+    equb &63, &73, &73, &73, &73, &33
+
+.data
+    equb 31, 'q'
+    equb 141        ; double height
+    equb 144+6      ; cyan
+    equb &6a
+    equb 128+7      ; white
+    equs "00"
+    equb 144+6      ; cyan
+    equb &35
+    equb ' '
+
+    equb 31, 'w'
+    equb 141        ; double height
+    equb 144+6      ; cyan
+    equb &6a
+    equb 128+7      ; white
+    equs "00"
+    equb 144+6      ; cyan
+    equb &35
+    equb ' '
+
+    equb 31, 'r'
+    equb ' '
+    equb 144+6      ; cyan
+    equb &22
+    equb 4, &23
+    equb &21
+    equb ' '
+
+    equb 20, 's'
+    equb 20, 's'
+    equb 20, 't'
+    equb 20, 't'
+
+    equb 144+6      ; cyan
+    equb 4, &2c
+    equb 128+6      ; cyan
+    equs "CH 0"
+    equb 144+6
+    equb &2c, &2c
+    equb 128+6      ; cyan
+    equs "CH 1"
+    equb 144+6
+    equb &2c, &2c
+    equb 128+6      ; cyan
+    equs "CH 2"
+    equb 144+6
+    equb &2c, &2c
+    equb 128+6      ; cyan
+    equs "DRUM"
+    equb 144+6
+    equb 4, &2c
+    equb 0
 }
 
 ; vim: ts=4 sw=4 et ft=asm

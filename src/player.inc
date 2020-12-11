@@ -20,10 +20,10 @@
     lda #&ff
     sta SHEILA+USER_VIA+VIA_T1CH ; low byte copied from latch automatically
     jsr player_routine
-    lda SHEILA+USER_VIA+VIA_T1CL
-    sta &7c00
-    lda SHEILA+USER_VIA+VIA_T1CH
-    sta &7c01
+    ;lda SHEILA+USER_VIA+VIA_T1CL
+    ;sta &7c00
+    ;lda SHEILA+USER_VIA+VIA_T1CH
+    ;sta &7c01
 
 	pla
 	tay
