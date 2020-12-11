@@ -102,6 +102,8 @@ guard PATTERN_DATA
 
 ._start
     jsr setup_screen_for_pattern_editor
+    lda #0
+    sta rowno
     jsr reset_row_pointer
 .current_note_has_changed
     jsr play_current_note
@@ -158,9 +160,11 @@ include "src/player.inc"
     clc
     adc #hi(PATTERN_DATA)
     sta rowptr+1
-    lda #0
+    lda rowno
+    asl a           ; multiply by eight, = ROW_LENGTH
+    asl a
+    asl a
     sta rowptr+0
-    sta rowno
     rts
 }
 
@@ -310,60 +314,6 @@ include "src/player.inc"
         endif
     next
 }
-
-.note_to_name_table
-    equs "C-"
-    equs "C#"
-    equs "D-"
-    equs "D#"
-    equs "E-"
-    equs "F-"
-    equs "F#"
-    equs "G-"
-    equs "G#"
-    equs "A-"
-    equs "A#"
-    equs "B-"
-
-.name_to_note_table
-    equb  9*3 ; "A-"
-              ; "A#"
-    equb 11*3 ; "B-"
-    equb  0*3 ; "C-"
-              ; "C#"
-    equb  2*3 ; "D-"
-              ; "D#"
-    equb  4*3 ; "E-"
-    equb  5*3 ; "F-"
-              ; "F#"
-    equb  7*3 ; "G-"
-              ; "G#"
-
-.octave_to_note_table
-    equb 0*12*3, 1*12*3, 2*12*3, 3*12*3, 4*12*3, 5*12*3
-
-; The low byte of the positions of the cursor for the editor.
-.editor_cursor_table
-    equb lo(MIDDLE_ROW_ADDRESS) + 4
-    equb lo(MIDDLE_ROW_ADDRESS) + 6
-    equb lo(MIDDLE_ROW_ADDRESS) + 8
-    equb lo(MIDDLE_ROW_ADDRESS) + 9
-    equb lo(MIDDLE_ROW_ADDRESS) + 12
-    equb lo(MIDDLE_ROW_ADDRESS) + 14
-    equb lo(MIDDLE_ROW_ADDRESS) + 16
-    equb lo(MIDDLE_ROW_ADDRESS) + 17
-    equb lo(MIDDLE_ROW_ADDRESS) + 20
-    equb lo(MIDDLE_ROW_ADDRESS) + 22
-    equb lo(MIDDLE_ROW_ADDRESS) + 24
-    equb lo(MIDDLE_ROW_ADDRESS) + 25
-    equb lo(MIDDLE_ROW_ADDRESS) + 28
-    equb lo(MIDDLE_ROW_ADDRESS) + 30
-    equb lo(MIDDLE_ROW_ADDRESS) + 32
-    equb lo(MIDDLE_ROW_ADDRESS) + 33
-    equb lo(MIDDLE_ROW_ADDRESS) + 36
-    equb lo(MIDDLE_ROW_ADDRESS) + 38
-    equb lo(MIDDLE_ROW_ADDRESS) + 40
-    equb lo(MIDDLE_ROW_ADDRESS) + 41
 
 ; --- End of main program ---------------------------------------------------
 

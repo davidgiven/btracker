@@ -8,41 +8,35 @@
     jsr OSBYTE
     bcs ret
 
-    cpx #139
-    beq key_up
-    cpx #138
-    beq key_down
-    cpx #136
-    beq key_left
-    cpx #137
-    beq key_right
-    cpx #9
-    beq key_tab
-    cpx #43
-    beq key_increment
-    cpx #45
-    beq key_decrement
-    cpx #60
-    beq tempo_down
-    cpx #62
-    beq tempo_up
-    cpx #32
-    beq playstop
-    cpx #27
-    beq panic
+    txa
+    ldy #0
+.loop
+    cmp key_table, y
+    bne no_key
+    lda key_table+2, y
+    pha
+    lda key_table+1, y
+    pha
+    rts
+.no_key
+    iny
+    iny
+    iny
+    ldx key_table, y
+    bne loop
 
     {
-        cpx #'0'
+        cmp #'0'
         blt no
-        cpx #'9'+1
+        cmp #'9'+1
         blt number_key
     .no
     }
 
     {
-        cpx #'A'
+        cmp #'A'
         blt no
-        cpx #'G'+1
+        cmp #'G'+1
         blt letter_key
     .no
     }
@@ -50,9 +44,44 @@
 .ret
     rts
 
-    .key_up
-    print ~key_up
+    macro key n, label
+        equb n
+        equw label - 1
+    endmacro
+
+    .key_table
+        key 139, key_up
+        key 138, key_down
+        key 136, key_left
+        key 137, key_right
+        key 9, key_tab
+        key 43, key_increment
+        key 45, key_decrement
+        key 60, tempo_down
+        key 62, tempo_up
+        key 32, playstop
+        key 27, panic
+        equb 0
+
+    .number_key
     {
+        sec
+        sbc #'0'
+        jmp set_value
+    }
+
+    .letter_key
+    {
+        sec
+        sbc #'A'-10
+        jmp set_value
+    }
+
+    .key_up
+    {
+        jsr detect_shift
+        beq shifted
+
         lda rowno
         sec
         sbc #1
@@ -64,10 +93,21 @@
         sbc #ROW_LENGTH
         sta rowptr+0
         rts
+
+    .shifted
+        lda patternno
+        clc
+        adc #1
+        and #NUM_PATTERNS-1
+        sta patternno
+        jmp reset_row_pointer
     }
 
     .key_down
     {
+        jsr detect_shift
+        beq shifted
+
         lda rowno
         clc
         adc #1
@@ -79,6 +119,14 @@
         adc #ROW_LENGTH
         sta rowptr+0
         rts
+
+    .shifted
+        lda patternno
+        sec
+        sbc #1
+        and #NUM_PATTERNS-1
+        sta patternno
+        jmp reset_row_pointer
     }
 
     .key_left
@@ -122,22 +170,6 @@
         jmp adjust_value
     }
 
-    .number_key
-    {
-        txa
-        sec
-        sbc #'0'
-        jmp set_value
-    }
-
-    .letter_key
-    {
-        txa
-        sec
-        sbc #'A'-10
-        jmp set_value
-    }
-
     .tempo_down
     {
         dec tempo
@@ -173,6 +205,17 @@
         sta volume, x
         dex
         bpl loop
+        rts
+    }
+
+    .detect_shift
+    print ~detect_shift
+    {
+        lda #&81
+        ldy #&ff
+        ldx #&ff ; shift
+        jsr OSBYTE
+        cpy #&ff
         rts
     }
 }
@@ -426,8 +469,20 @@
 ; Draw the entire screen.
 
 LINE_PADDING = 0
+PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
 .draw_screen
 {
+    lda #lo(PATTERN_NUMBER_ADDRESS)
+    sta scrptr+0
+    lda #hi(PATTERN_NUMBER_ADDRESS)
+    sta scrptr+1
+    lda patternno
+    jsr print_h8
+    lda #lo(PATTERN_NUMBER_ADDRESS + 40)
+    sta scrptr+0
+    lda patternno
+    jsr print_h8
+
     lda #lo(MIDDLE_ROW_ADDRESS)
     sta scrptr+0
     lda #hi(MIDDLE_ROW_ADDRESS)
@@ -752,6 +807,46 @@ LINE_PADDING = 0
     equb 4, &2c
     equb 0
 }
+
+.note_to_name_table
+    equs "C-"
+    equs "C#"
+    equs "D-"
+    equs "D#"
+    equs "E-"
+    equs "F-"
+    equs "F#"
+    equs "G-"
+    equs "G#"
+    equs "A-"
+    equs "A#"
+    equs "B-"
+
+.name_to_note_table
+    equb  9*3 ; "A-"
+              ; "A#"
+    equb 11*3 ; "B-"
+    equb  0*3 ; "C-"
+              ; "C#"
+    equb  2*3 ; "D-"
+              ; "D#"
+    equb  4*3 ; "E-"
+    equb  5*3 ; "F-"
+              ; "F#"
+    equb  7*3 ; "G-"
+              ; "G#"
+
+.octave_to_note_table
+    equb 0*12*3, 1*12*3, 2*12*3, 3*12*3, 4*12*3, 5*12*3
+
+; The low byte of the positions of the cursor for the editor.
+.editor_cursor_table
+    for note, 0, 3
+        equb lo(MIDDLE_ROW_ADDRESS) + 7 + 8*note + 0
+        equb lo(MIDDLE_ROW_ADDRESS) + 7 + 8*note + 2
+        equb lo(MIDDLE_ROW_ADDRESS) + 7 + 8*note + 4
+        equb lo(MIDDLE_ROW_ADDRESS) + 7 + 8*note + 5
+    next
 
 ; vim: ts=4 sw=4 et ft=asm
 
