@@ -107,9 +107,6 @@ guard PATTERN_DATA
 
     ; Play the appropriate number of ticks of music.
 
-    lda #19
-    jsr OSBYTE
-
 .playloop
     lda #KBD_IRQ
     bit SHEILA+SYSTEM_VIA+VIA_IFR
@@ -175,9 +172,18 @@ include "src/player.inc"
     lda (rowptr), y
     iny
     cmp #NUM_PITCHES
-    bcc is_note
+    blt is_note
+    cmp #FIRST_COMMAND + ('O' - 'A')
+    beq off_command
+.done
     iny
     jmp next
+
+.off_command
+    ; Off: turn off this channel.
+    lda #0
+    sta volume, x
+    jmp done
 
 .is_note
     sta pitch, x

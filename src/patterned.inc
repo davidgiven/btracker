@@ -573,12 +573,9 @@
     jsr print_char
     txa
     jsr print_h8
-
 .next
-    inc scrptr+0
-    bne t1
-    inc scrptr+1
-.t1
+    lda #' '
+    jsr print_char
 
     ; Tone/volume/control
 

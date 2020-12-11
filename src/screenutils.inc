@@ -2,7 +2,8 @@
 ; Prints the hex nibble A at scrptr
 .print_h4
     and #&0f
-    jsr nibble_to_ascii
+	tay
+	lda hex_table, y
 .print_char
     ldy #0
     sta (scrptr), y
@@ -55,17 +56,9 @@
     rts
 }
 
-; Convert a nibble to ASCII.
-
-.nibble_to_ascii
-{
-    cmp #10
-    bcc less_than_ten
-    adc #&66
-.less_than_ten
-    eor #%00110000
-    rts
-}
+; Hex lookup table.
+.hex_table
+	equs "0123456789abcdef"
 
 ; vim: sw=4 ts=4 et ft=asm
 
