@@ -40,6 +40,9 @@
         blt letter_key
     .no
     }
+
+    cmp #27
+    blt command_key
     
 .ret
     rts
@@ -75,6 +78,26 @@
         sec
         sbc #'A'-10
         jmp set_value
+    }
+
+    .command_key
+    {
+        clc
+        adc #FIRST_COMMAND-1
+        tax
+        lda cursorx
+        and #3
+        cmp #2
+        bge ret
+
+        lda cursorx
+        lsr a
+        lsr a
+        tay
+        txa
+        sta (rowptr),y
+    .ret
+        rts
     }
 
     .key_up
@@ -150,6 +173,11 @@
 
     .key_tab
     {
+        jsr detect_ctrl
+        bne n
+        lda #9
+        jmp command_key
+    .n
         jsr detect_shift
         beq shifted
 
@@ -227,6 +255,16 @@
         cpy #&ff
         rts
     }
+
+    .detect_ctrl
+    {
+        lda #&81
+        ldy #&ff
+        ldx #&fe ; control
+        jsr OSBYTE
+        cpy #&ff
+        rts
+    }
 }
 
 ; --- Editor logic ----------------------------------------------------------
@@ -258,6 +296,11 @@
     lsr a
     and #&fe
     tay
+
+    lda (rowptr), y     ; if not a note, do nothing
+    cmp #FIRST_COMMAND
+    bge nochange
+
     lda cursorx
     cmp #12
     beq drum
@@ -297,7 +340,7 @@
         sbc #1
         ora p
         sta (rowptr), y
-    .nochange
+    .^nochange
         rts
     }
 
@@ -355,6 +398,9 @@
 
     .octave
     {
+        lda (rowptr), y
+        cmp #FIRST_COMMAND
+        bge nochange
         txa
         bmi negative
         lda #12*3
@@ -391,6 +437,14 @@
     lsr a
     and #&fe
     tay
+
+    lda (rowptr), y     ; if not a note, pick one at random
+    cmp #FIRST_COMMAND
+    blt is_a_note
+    lda #C_1
+    sta (rowptr), y
+.is_a_note
+
     lda cursorx
     cmp #12
     beq drum
@@ -431,7 +485,7 @@
         clc
         adc p                       ; adjust for octave
         sta (rowptr), y
-    .nochange
+    .^nochange
         rts
     }
 
