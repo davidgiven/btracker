@@ -2,6 +2,8 @@
 
 .pattern_editor
 {
+    ldx #0
+    txs
     jsr setup_screen_for_pattern_editor
 .current_note_has_changed
     jsr play_current_note
@@ -98,6 +100,7 @@
     endmacro
 
     .key_table
+        key 162, tone_editor
         key 139, key_up
         key 138, key_down
         key 136, key_left
@@ -131,17 +134,11 @@
         adc #FIRST_COMMAND-1
         tax
         lda cursorx
-        and #3
-        cmp #2
-        bge ret
-
-        lda cursorx
         lsr a
-        lsr a
+        and #&0e
         tay
         txa
-        sta (rowptr),y
-    .ret
+        sta (rowptr), y
         rts
     }
 
@@ -892,28 +889,26 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
 {
     jsr draw_standard_header
 
-    ldx #5
-.loop
-    lda special, x
-    sta &7c00+40+40-7, x
-    dex
-    bpl loop
-
     ldx #7
-    ldy #19
+    ldy #18
     jsr draw_tab
     lda #lo(data)
     sta w+0
     lda #hi(data)
     sta w+1
+    lda #40
+    sta scrptr+0
+    lda #&7c
+    sta scrptr+1
     ldx #80
     jsr draw_packed
     rts
 
-.special
-    equb &63, &73, &73, &73, &73, &33
-
 .data
+    equb 144+6      ; cyan
+    equb 30, &23, &23, &23
+    equb &63, 4, &73, &33, 32
+
     equb 31, 'q'
     equb 141        ; double height
     equb 144+6      ; cyan

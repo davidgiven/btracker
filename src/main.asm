@@ -50,6 +50,8 @@ MIDDLE_ROW = 16
 MIDDLE_ROW_ADDRESS = &7c00 + (MIDDLE_ROW*40)
 
 org &00
+guard &9f
+
 .pitch        equb 0, 0, 0, 0  ; master copy for note
 .volume       equb 0, 0, 0, 0
 .w            equw 0
@@ -68,15 +70,21 @@ org &00
 
 .cpitch        equb 0, 0, 0, 0 ; current copy (based on tone procedure)
 .cvolume       equb 0, 0, 0, 0
-.rpitch        equb 0, 0, 0,0  ; what the chip is currently playing
+.rpitch        equb 0, 0, 0, 0 ; what the chip is currently playing
 .rvolume       equb 0, 0, 0, 0
 .tone          equb 0, 0, 0, 0 ; current tone
-.tonet         equb 0, 0, 0, 0 ; tone tick count
+.tonew_pitch   equb 0, 0, 0, 0 ; tone pitch parameter
+.tonen_pitch   equb 0, 0, 0, 0 ; time of next pitch event
+.tonew_volume  equb 0, 0, 0, 0 ; tone volume parameter
+.tonen_volume  equb 0, 0, 0, 0 ; time of next volume event
+.tonew_tremulo equb 0, 0, 0, 0 ; tone tremulo parameter
+.tonen_tremulo equb 0, 0, 0, 0 ; time of next tremulo event
+.tonew_vibrato equb 0, 0, 0, 0 ; tone vibrato parameter
+.tonen_vibrato equb 0, 0, 0, 0 ; time of next vibrato event
 .oldirqvector  equw 0          ; previous vector in chain
 .tickcount     equb 0          ; ticks left in the current note
+.ticks         equb 0          ; global clock
 .iw            equb 0          ; interrupt workspace
-
-guard &9f
 
 mapchar '#', 95             ; mode 7 character set
 
@@ -109,6 +117,7 @@ guard PATTERN_DATA
     jmp pattern_editor
 
 include "src/patterned.inc"
+include "src/toneed.inc"
 include "src/screenutils.inc"
 include "src/player.inc"
 
@@ -134,11 +143,13 @@ include "src/player.inc"
 
 .play_current_note
 {
-    ldy #0
-    ldx #0
+    ldx #3          ; channel
     sei             ; atomic wrt the interrupt-driven player
 
 .loop
+    txa
+    asl a
+    tay             ; y is offset to note
     lda (rowptr), y
     iny
     cmp #NUM_PITCHES
@@ -146,34 +157,60 @@ include "src/player.inc"
     cmp #FIRST_COMMAND + ('O' - 'A')
     beq off_command
 .done
-    iny
     jmp next
 
 .off_command
     ; Off: turn off this channel.
     lda #0
     sta volume, x
-    jmp done
+    jmp next
 
 .is_note
     sta pitch, x
     lda (rowptr), y
+    tay
     and #&0f
     sta volume, x
-    lda (rowptr), y
+    tya
     lsr a
     lsr a
     lsr a
     lsr a
     sta tone, x
-    lda #0
-    sta tonet, x
-    iny
 
+    tay             ; y is tone number
+                    ; x is channel
+
+    lda tone_pitch, y
+    sta tonew_pitch, x
+    lda tone_pitch_period, y
+    clc
+    adc ticks
+    sta tonen_pitch, x
+
+    lda tone_volume, y
+    sta tonew_volume, x
+    lda tone_volume_period, y
+    clc
+    adc ticks
+    sta tonen_volume, x
+
+    lda tone_tremulo, y
+    sta tonew_tremulo, x
+    lda tone_tremulo_period, y
+    clc
+    adc ticks
+    sta tonen_tremulo, x
+
+    lda tone_vibrato, y
+    sta tonew_vibrato, x
+    lda tone_vibrato_period, y
+    clc
+    adc ticks
+    sta tonen_vibrato, x
 .next
-    inx
-    cpx #4
-    bne loop
+    dex
+    bpl loop
 
     lda tempo
     sta tickcount

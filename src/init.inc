@@ -32,6 +32,10 @@
     ldx #1          ; ...make characters
     jsr OSBYTE
 
+    lda #225        ; function keys
+    ldx #160        ; ...make character codes
+    jsr OSBYTE
+
     lda #229        ; ESCAPE key
     ldx #1          ; ...makes character
     ldy #0

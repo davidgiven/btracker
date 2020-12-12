@@ -20,10 +20,8 @@
     lda #&ff
     sta SHEILA+USER_VIA+VIA_T1CH ; low byte copied from latch automatically
     jsr player_routine
-    ;lda SHEILA+USER_VIA+VIA_T1CL
-    ;sta &7c00
-    ;lda SHEILA+USER_VIA+VIA_T1CH
-    ;sta &7c01
+    lda SHEILA+USER_VIA+VIA_T1CH
+    sta &7c00
 
 	pla
 	tay
@@ -39,31 +37,26 @@
 
 .player_routine
 {
-    ; The front end uses this to track when the current note has ended.
+    ; Adjust timers.
 
     dec tickcount
+    inc ticks
 
     ; Run the tone handlers.
 
     {
-        ldx #0
+        ldy #3
     .loop
-        txa
-        pha
         jsr tone_generator
-        pla
-        tax
-        inc tonet, x
 
-        inx
-        cpx #4
-        bne loop
+        dey
+        bpl loop
     }
 
     ; Updates the sound chip with the current data, after tone processing.
 
     {
-        ldx #0 ; channel
+        ldx #3 ; channel
     .loop
         ; Pitch byte(s)
 
@@ -103,9 +96,8 @@
         jsr poke_sound_chip
 
     .next
-        inx
-        cpx #4
-        bne loop
+        dex
+        bpl loop
         rts
 
     .drum
@@ -142,14 +134,96 @@
 }
 
 
-; Called with the channel in x.
+; Called with the channel in y.
 .tone_generator
 {
-    lda pitch, x
-    sta cpitch, x
+    lda tone, y
+    tax             ; x contains tone number
 
-    lda volume, x
-    sta cvolume, x
+    ; Pitch
+
+    {
+        lda ticks
+        cmp tonen_pitch, y
+        bne no_adjust
+
+        clc
+        lda ticks
+        adc tone_pitch_period, x
+        sta tonen_pitch, y
+
+        clc
+        lda tone_pitch_delta, x
+        adc tonew_pitch, y
+        cmp #NUM_PITCHES
+        blt no_pitch_wrap
+        sec
+        sbc #NUM_PITCHES
+    .no_pitch_wrap
+        sta tonew_pitch, y
+
+    .no_adjust
+        lda pitch, y
+        clc
+        adc tonew_pitch, y          ; allow overflow
+        sta cpitch, y
+    }
+
+    ; Volume
+
+    {
+        lda ticks
+        cmp tonen_volume, y
+        bne no_adjust
+
+        clc
+        lda ticks
+        adc tone_volume_period, x
+        sta tonen_volume, y
+
+        ; Saturated add of tonew_volume + tone_volume_delta to -f..+f.
+
+        clc
+        lda tonew_volume, y
+        adc tone_volume_delta, x
+        {
+            bmi negative
+
+            cmp #&10
+            blt exit
+            lda #&f
+            jmp exit
+        .negative
+            cmp #&f0
+            bge exit
+            lda #&f0
+        .exit
+        }
+        sta tonew_volume, y
+
+    .no_adjust
+        ; Saturated add of volume + tonew_volume to 0..f.
+
+        {
+            clc
+            lda volume, y
+            eor #&80
+            adc tonew_volume, y
+            eor #&80
+            bvc exit               ; forbid overflow
+
+            lda tonew_volume, y    ; sign extend delta
+            asl a                  ; get sign
+            lda #0
+            adc #&ff               ; negative -> 0, positive -> &ff
+            and #&0f
+        .exit
+        }
+        sta cvolume, y
+        clc
+        adc #65
+        sta &7c01, y
+    }
 
     rts
 }

@@ -135,7 +135,9 @@
     equb 128+4      ; blue
     equs "  Pattern"
     equs 128+4      ; blue
-    equb 15, ' '
+    equs "  Tone"
+    equs 128+4      ; blue
+    equb 8, ' '
     equb 128+1
     equs "f0-f3 "
 
@@ -157,7 +159,6 @@
     sta &7c01, x
     lda #128+4      ; blue
     sta &7c02, x
-    lda #128+6      ; cyan
     sta &7c00, y
     lda #156        ; background off
     sta &7c01, y
