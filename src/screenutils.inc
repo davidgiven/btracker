@@ -38,6 +38,22 @@
     jmp print_h4
 }
 
+; Moves the cursor to the address at YYXX.
+.move_cursor
+{
+    lda #14
+    sta CRTC_ADDRESS
+    tya
+    sec
+    sbc #&54
+    sta CRTC_DATA
+    lda #15
+    sta CRTC_ADDRESS
+    txa
+    sta CRTC_DATA
+    rts
+}
+
 ; Advances the screen pointer by A bytes.
 
 .advance_scrptr

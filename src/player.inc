@@ -56,7 +56,7 @@
         inc tonet, x
 
         inx
-        cpx #3
+        cpx #4
         bne loop
     }
 
@@ -65,7 +65,7 @@
     {
         ldx #0 ; channel
     .loop
-        ; Command byte and low four bits of pitch
+        ; Pitch byte(s)
 
         txa
         lsr a
@@ -78,14 +78,15 @@
         cmp rpitch, x   ; chip already set for this pitch?
         beq do_volume   ; yes, skip write and go straight for volume
         sta rpitch, x   ; update current value
+        cpx #3          ; drum track is special
+        beq drum
+
         tay
         lda iw
-        ora pitch_cmd_table_1, y
+        ora pitch_cmd_table_1, y 
         jsr poke_sound_chip
-
-        ; High six bits.
-
         lda pitch_cmd_table_2, y
+    .poke
         jsr poke_sound_chip
 
         ; Volume byte
@@ -103,11 +104,14 @@
 
     .next
         inx
-        cpx #3
+        cpx #4
         bne loop
-    }
+        rts
 
-    rts
+    .drum
+        ora #&e0
+        jmp poke
+    }
 }
 
 ; Writes the byte in A to the sound chip.

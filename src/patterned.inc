@@ -150,12 +150,22 @@
 
     .key_tab
     {
+        jsr detect_shift
+        beq shifted
+
         lda cursorx
         clc
         adc #4
+    .write
         and #&0f
         sta cursorx
         rts
+
+    .shifted
+        lda cursorx
+        sec
+        sbc #4
+        jmp write
     }
 
     .key_increment
@@ -209,7 +219,6 @@
     }
 
     .detect_shift
-    print ~detect_shift
     {
         lda #&81
         ldy #&ff
@@ -875,13 +884,13 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     equs "B-"
 
 .drum_to_name_tabe
-    equs "LoT"
-    equs "MdT"
     equs "HiT"
+    equs "MdT"
+    equs "LoT"
     equs "c2T"
-    equs "Lo "
-    equs "Md "
     equs "Hi "
+    equs "Md "
+    equs "Lo "
     equs "c2 "
 
 .name_to_note_table

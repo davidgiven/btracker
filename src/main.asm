@@ -68,7 +68,7 @@ org &00
 
 .cpitch        equb 0, 0, 0, 0 ; current copy (based on tone procedure)
 .cvolume       equb 0, 0, 0, 0
-.rpitch        equb 0, 0, 0    ; what the chip is currently playing
+.rpitch        equb 0, 0, 0,0  ; what the chip is currently playing
 .rvolume       equb 0, 0, 0, 0
 .tone          equb 0, 0, 0, 0 ; current tone
 .tonet         equb 0, 0, 0, 0 ; tone tick count
@@ -212,7 +212,7 @@ include "src/player.inc"
 
 .next
     inx
-    cpx #3
+    cpx #4
     bne loop
 
     lda tempo
@@ -221,25 +221,9 @@ include "src/player.inc"
     rts
 }
 
-; Moves the cursor to the address at YYXX.
-.move_cursor
-{
-    lda #14
-    sta CRTC_ADDRESS
-    tya
-    sec
-    sbc #&54
-    sta CRTC_DATA
-    lda #15
-    sta CRTC_ADDRESS
-    txa
-    sta CRTC_DATA
-    rts
-}
-
 ; Calls the subroutine whose pointer is in p.
-.jsr_p
-    jmp (p)
+.jsr_w
+    jmp (w)
 
 ; Note lookup table.
 ;
