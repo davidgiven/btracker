@@ -1,3 +1,48 @@
+; --- Main routine ----------------------------------------------------------
+
+.pattern_editor
+{
+    jsr setup_screen_for_pattern_editor
+.current_note_has_changed
+    jsr play_current_note
+.main_loop
+    jsr draw_screen
+
+    ; Play the appropriate number of ticks of music.
+
+.playloop
+    lda #KBD_IRQ
+    bit SHEILA+SYSTEM_VIA+VIA_IFR
+    bne keypress
+
+    lda tickcount
+    bpl playloop
+
+    ; If we fall out the bottom, we're out of ticks. If we're actually playing,
+    ; advance to the next row.
+
+    lda playing
+    beq main_loop
+
+    lda rowptr+0
+    clc
+    adc #ROW_LENGTH
+    sta rowptr+0
+    
+    lda rowno
+    clc
+    adc #1
+    and #&1f
+    sta rowno
+
+    jmp current_note_has_changed
+
+.keypress
+    cli
+    jsr do_patterneditor_keypress
+    jmp current_note_has_changed
+}
+
 ; --- Pattern editor key entry ----------------------------------------------
 
 .do_patterneditor_keypress
