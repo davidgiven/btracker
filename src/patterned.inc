@@ -224,136 +224,169 @@
 
 ; Adjusts the value under the cursor by A.
 
-.adjust_value
 {
+    .drum
+    {
+        txa
+        clc
+        adc (rowptr), y
+        and #7
+        sta (rowptr), y
+        rts
+    }
+
+    .drumt
+    {
+        lda (rowptr), y
+        eor #4
+        sta (rowptr), y
+        rts
+    }
+
+.*adjust_value
     tax
     lda cursorx
     lsr a
     and #&fe
     tay
     lda cursorx
+    cmp #12
+    beq drum
+    cmp #13
+    beq drumt
     and #&03
     beq pitch
     cmp #1
     beq octave
     cmp #2
     beq tone
-.volume
-{
-    iny
-    lda (rowptr), y
-    and #&f0
-    sta p
+    .volume
+    {
+        iny
+        lda (rowptr), y
+        and #&f0
+        sta p
 
-    txa
-    bmi negative
+        txa
+        bmi negative
 
-    lda (rowptr), y
-    and #&0f
-    cmp #&0f
-    beq nochange
-    clc
-    adc #1
-    ora p
-    sta (rowptr), y
-    rts
+        lda (rowptr), y
+        and #&0f
+        cmp #&0f
+        beq nochange
+        clc
+        adc #1
+        ora p
+        sta (rowptr), y
+        rts
 
-.negative
-    lda (rowptr), y
-    and #&0f
-    beq nochange
-    sec
-    sbc #1
-    ora p
-    sta (rowptr), y
-.nochange
-    rts
-}
+    .negative
+        lda (rowptr), y
+        and #&0f
+        beq nochange
+        sec
+        sbc #1
+        ora p
+        sta (rowptr), y
+    .nochange
+        rts
+    }
 
-.tone
-{
-    iny
-    lda (rowptr), y
-    and #&0f
-    sta p
+    .tone
+    {
+        iny
+        lda (rowptr), y
+        and #&0f
+        sta p
 
-    txa
-    bmi negative
+        txa
+        bmi negative
 
-    lda (rowptr), y
-    and #&f0
-    cmp #&f0
-    beq nochange
-    clc
-    adc #&10
-    ora p
-    sta (rowptr), y
-    rts
+        lda (rowptr), y
+        and #&f0
+        cmp #&f0
+        beq nochange
+        clc
+        adc #&10
+        ora p
+        sta (rowptr), y
+        rts
 
-.negative
-    lda (rowptr), y
-    and #&f0
-    beq nochange
-    sec
-    sbc #&10
-    ora p
-    sta (rowptr), y
-.nochange
-    rts
-}
+    .negative
+        lda (rowptr), y
+        and #&f0
+        beq nochange
+        sec
+        sbc #&10
+        ora p
+        sta (rowptr), y
+    .nochange
+        rts
+    }
 
-.pitch
-{
-    txa
-    bpl positive
-    lda #3
-    jmp change_pitch_down
-.positive
-    lda #3
-}
-.change_pitch_up
-{
-    clc
-    adc (rowptr), y
-    cmp #NUM_PITCHES
-    bcs nochange
-    sta (rowptr), y
-.nochange
-    rts
-}
+    .pitch
+    {
+        txa
+        bpl positive
+        lda #3
+        jmp change_pitch_down
+    .positive
+        lda #3
+    }
+    .change_pitch_up
+    {
+        clc
+        adc (rowptr), y
+        cmp #NUM_PITCHES
+        bcs nochange
+        sta (rowptr), y
+    .nochange
+        rts
+    }
 
-.octave
-{
-    txa
-    bmi negative
-    lda #12*3
-    jmp change_pitch_up
-.negative
-    lda #12*3
-}
-.change_pitch_down
-{
-    eor #&ff
-    sec
-    adc (rowptr), y
-    bcc nochange
-    sta (rowptr), y
-.nochange
-    rts
-}
-
+    .octave
+    {
+        txa
+        bmi negative
+        lda #12*3
+        jmp change_pitch_up
+    .negative
+        lda #12*3
+    }
+    .change_pitch_down
+    {
+        eor #&ff
+        sec
+        adc (rowptr), y
+        bcc nochange
+        sta (rowptr), y
+    .nochange
+        rts
+    }
 }
 
 ; Sets the value under the cursor to A.
 
-.set_value
 {
+    .drum
+    {
+        txa
+        and #7
+        sta (rowptr), y
+        rts
+    }
+
+.*set_value
     tax
     lda cursorx
     lsr a
     and #&fe
     tay
     lda cursorx
+    cmp #12
+    beq drum
+    cmp #13
+    beq drum
     and #&03
     cmp #2
     beq tone
@@ -364,103 +397,103 @@
 
     cpx #10
     blt octave
-.pitch
-{
-    txa
-    sec
-    sbc #10
-    blt nochange
+    .pitch
+    {
+        txa
+        sec
+        sbc #10
+        blt nochange
 
-    pha
-    lda (rowptr), y
-    tax
-    lda note_decode_table, x    ; decode to octave, pitch
-    lsr a
-    lsr a
-    lsr a
-    lsr a                       ; extract octave number
-    tax
-    lda octave_to_note_table, x ; get pitch of C for this octave
-    sta p
-    pla
+        pha
+        lda (rowptr), y
+        tax
+        lda note_decode_table, x    ; decode to octave, pitch
+        lsr a
+        lsr a
+        lsr a
+        lsr a                       ; extract octave number
+        tax
+        lda octave_to_note_table, x ; get pitch of C for this octave
+        sta p
+        pla
 
-    tax
-    lda name_to_note_table, x   ; get relative pitch of this note
-    clc
-    adc p                       ; adjust for octave
-    sta (rowptr), y
-.nochange
-    rts
-}
+        tax
+        lda name_to_note_table, x   ; get relative pitch of this note
+        clc
+        adc p                       ; adjust for octave
+        sta (rowptr), y
+    .nochange
+        rts
+    }
 
-.volume
-    iny
-    lda (rowptr), y
-    and #&f0
-    sta p
+    .volume
+        iny
+        lda (rowptr), y
+        and #&f0
+        sta p
 
-    txa
-    ora p
-    sta (rowptr), y
-    rts
-    
-.tone
-    iny
-    lda (rowptr), y
-    and #&0f
-    sta p
+        txa
+        ora p
+        sta (rowptr), y
+        rts
+        
+    .tone
+        iny
+        lda (rowptr), y
+        and #&0f
+        sta p
 
-    txa
-    asl a
-    asl a
-    asl a
-    asl a
-    ora p
-    sta (rowptr), y
-    rts
-    
-.octave
-{
-    stx p
+        txa
+        asl a
+        asl a
+        asl a
+        asl a
+        ora p
+        sta (rowptr), y
+        rts
+        
+    .octave
+    {
+        stx p
 
-    lda (rowptr), y
-    tax
-    lda note_decode_table, x    ; decode to octave, pitch
-    lsr a
-    lsr a
-    lsr a
-    lsr a
-    cmp p                       ; test current octave against desired
-    blt raise
+        lda (rowptr), y
+        tax
+        lda note_decode_table, x    ; decode to octave, pitch
+        lsr a
+        lsr a
+        lsr a
+        lsr a
+        cmp p                       ; test current octave against desired
+        blt raise
 
-.lower
-    tax
-    lda (rowptr), y
-.decrease_loop
-    sec
-    sbc #12*3
-    bcc no_change
-    dex
-    cpx p
-    bne decrease_loop
-    jmp ret
+    .lower
+        tax
+        lda (rowptr), y
+    .decrease_loop
+        sec
+        sbc #12*3
+        bcc no_change
+        dex
+        cpx p
+        bne decrease_loop
+        jmp ret
 
-.raise
-    tax
-    lda (rowptr), y
-.increase_loop
-    clc
-    adc #12*3
-    cmp #NUM_PITCHES
-    bge no_change
-    inx
-    cpx p
-    bne increase_loop
-.ret
-    sta (rowptr), y
-.no_change
-    rts
-}
+    .raise
+        tax
+        lda (rowptr), y
+    .increase_loop
+        clc
+        adc #12*3
+        cmp #NUM_PITCHES
+        bge no_change
+        inx
+        cpx p
+        bne increase_loop
+    .ret
+        sta (rowptr), y
+    .no_change
+        rts
+    }
 
 }
 
@@ -603,7 +636,7 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     jsr draw_note
     lda #1
     jsr advance_scrptr
-    jsr draw_note
+    jsr draw_drum
     lda #1
     jsr advance_scrptr
     lda #156
@@ -664,6 +697,25 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     lsr a
     lsr a
     jsr print_h4
+    jmp next
+
+.*draw_drum
+    ldy #0
+    lda (disptr), y
+    cmp #FIRST_COMMAND
+    bge is_a_command
+    asl a
+    clc
+    adc (disptr), y
+    tax
+    lda drum_to_name_tabe, x
+    jsr print_char
+    inx
+    lda drum_to_name_tabe, x
+    jsr print_char
+    inx
+    lda drum_to_name_tabe, x
+    jsr print_char
     jmp next
 
 .not_a_note
@@ -788,7 +840,7 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     equb 20, 't'
 
     equb 144+6      ; cyan
-    equb 4, &2c
+    equb 6, &2c
     equb 128+6      ; cyan
     equs "CH 0"
     equb 144+6
@@ -804,7 +856,7 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     equb 128+6      ; cyan
     equs "DRUM"
     equb 144+6
-    equb 4, &2c
+    equb 2, &2c
     equb 0
 }
 
@@ -821,6 +873,16 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     equs "A-"
     equs "A#"
     equs "B-"
+
+.drum_to_name_tabe
+    equs "LoT"
+    equs "MdT"
+    equs "HiT"
+    equs "c2T"
+    equs "Lo "
+    equs "Md "
+    equs "Hi "
+    equs "c2 "
 
 .name_to_note_table
     equb  9*3 ; "A-"
