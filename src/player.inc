@@ -178,10 +178,13 @@
         ; Modulus add of tonew_pitch + tone_pitch_delta.
 
         {
+            lda tone_pitch_delta, x
+            clc
+            bmi negative
             sec
-            lda tonew_pitch, y
             sbc #NUM_PITCHES
-            adc tone_pitch_delta, x
+        .negative
+            adc tonew_pitch, y
             bcs end
             adc #NUM_PITCHES
         .end
