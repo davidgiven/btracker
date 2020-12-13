@@ -62,10 +62,10 @@ org MUSIC_DATA
 ; Tone information.
 
 .tone_pitch          equb 0,  0, 0, 0, 0, 0, 0, 0
-.tone_pitch_delta    equb 00, 0, 0, 0, 0, 0, 0, 0
-.tone_pitch_period   equb 6,  0, 0, 0, 0, 0, 0, 0
+.tone_pitch_delta    equb 1, 1, 1, 0, 0, 0, 0, 0
+.tone_pitch_period   equb 1,  2, 3, 0, 0, 0, 0, 0
 .tone_volume	     equb 0,  0, 0, 0, 0, 0, 0, 0
-.tone_volume_delta   equb -1, 0, 0, 0, 0, 0, 0, 0
+.tone_volume_delta   equb 0, 0, 0, 0, 0, 0, 0, 0
 .tone_volume_period  equb 10, 0, 0, 0, 0, 0, 0, 0
 .tone_tremulo        skip 16
 .tone_tremulo_delta  skip 16

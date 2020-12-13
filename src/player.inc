@@ -20,8 +20,24 @@
     lda #&ff
     sta SHEILA+USER_VIA+VIA_T1CH ; low byte copied from latch automatically
     jsr player_routine
-    lda SHEILA+USER_VIA+VIA_T1CH
+
+    sec
+    lda #0
+    sbc SHEILA+USER_VIA+VIA_T1CH
+    tay
+
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    tax
+    lda hex_table, x
     sta &7c00
+    tya
+    and #&0f
+    tax
+    lda hex_table, x
+    sta &7c01
 
 	pla
 	tay
@@ -37,6 +53,8 @@
 
 .player_routine
 {
+    print ~P%
+
     ; Adjust timers.
 
     dec tickcount
@@ -101,6 +119,7 @@
         rts
 
     .drum
+        and #&0f
         ora #&e0
         jmp poke
     }
@@ -140,6 +159,10 @@
     lda tone, y
     tax             ; x contains tone number
 
+    lda #0          ; reset pitch and volume accumulators
+    sta cpitch, y
+    sta cvolume, y
+
     ; Pitch
 
     {
@@ -152,20 +175,23 @@
         adc tone_pitch_period, x
         sta tonen_pitch, y
 
-        clc
-        lda tone_pitch_delta, x
-        adc tonew_pitch, y
-        cmp #NUM_PITCHES
-        blt no_pitch_wrap
-        sec
-        sbc #NUM_PITCHES
-    .no_pitch_wrap
-        sta tonew_pitch, y
+        ; Modulus add of tonew_pitch + tone_pitch_delta.
 
+        {
+            sec
+            lda tonew_pitch, y
+            sbc #NUM_PITCHES
+            adc tone_pitch_delta, x
+            bcs end
+            adc #NUM_PITCHES
+        .end
+            sta tonew_pitch, y
+        }
+        
     .no_adjust
-        lda pitch, y
         clc
-        adc tonew_pitch, y          ; allow overflow
+        lda cpitch, y
+        adc tonew_pitch, y
         sta cpitch, y
     }
 
@@ -174,58 +200,83 @@
     {
         lda ticks
         cmp tonen_volume, y
-        bne no_adjust
+        bne adjust_value
 
         clc
         lda ticks
         adc tone_volume_period, x
         sta tonen_volume, y
 
-        ; Saturated add of tonew_volume + tone_volume_delta to -f..+f.
+        ; Signed saturated addition of unsigned tonew_volume + signed tone_volume_delta.
 
         clc
         lda tonew_volume, y
         adc tone_volume_delta, x
-        {
-            bmi negative
+        bvc no_overflow         ; signed overflow
 
-            cmp #&10
-            blt exit
-            lda #&f
-            jmp exit
-        .negative
-            cmp #&f0
-            bge exit
-            lda #&f0
-        .exit
-        }
+        lda tone_volume_delta, x
+        bmi delta_negative
+        lda #15
+        jmp no_overflow
+    .delta_negative
+        lda #lo(-15)
+    .no_overflow
         sta tonew_volume, y
 
-    .no_adjust
-        ; Saturated add of volume + tonew_volume to 0..f.
-
-        {
-            clc
-            lda volume, y
-            eor #&80
-            adc tonew_volume, y
-            eor #&80
-            bvc exit               ; forbid overflow
-
-            lda tonew_volume, y    ; sign extend delta
-            asl a                  ; get sign
-            lda #0
-            adc #&ff               ; negative -> 0, positive -> &ff
-            and #&0f
-        .exit
-        }
-        sta cvolume, y
+    .adjust_value
         clc
-        adc #65
-        sta &7c01, y
+        lda cvolume, y
+        adc tonew_volume, y
+        sta cvolume, y
+    }
+
+    ; Saturated add of volume + cvolume to 0..f.
+
+    {
+        clc
+        lda volume, y
+        eor #&80
+        adc cvolume, y
+        eor #&80
+        bvc exit               ; forbid overflow
+
+        lda cvolume, y         ; sign extend delta
+        asl a                  ; get sign
+        lda #0
+        adc #&ff               ; negative -> 0, positive -> &ff
+        and #&0f
+    .exit
+        sta cvolume, y
+    }
+
+    ; Modulus add of pitch + cpitch.
+
+    {
+        sec
+        lda pitch, y
+        sbc #NUM_PITCHES
+        adc cpitch, y
+        bcs end
+        adc #NUM_PITCHES
+    .end
+        sta cpitch, y
     }
 
     rts
+
+    ; Adds A to the value in cpitch, wrapping around if necessary.
+
+    .modulus_add_to_cpitch
+    {
+        sec
+        sbc #NUM_PITCHES
+        adc cpitch, y
+        bcs ret
+        adc #NUM_PITCHES
+    .ret
+        sta cpitch, y
+        rts
+    }
 }
 
 ; vim: ts=4 sw=4 et ft=asm
