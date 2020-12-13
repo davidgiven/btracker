@@ -4,17 +4,22 @@ delta=&71
 FOR pass=0 TO 3 STEP 3
 P% = &900
 [opt pass
-	lda input
-	bit delta
+	lda delta
+	bpl positive
 	clc
-    bmi negative
-    sec
-    sbc #mod
-.negative
-    adc delta
-    bcs end
-    adc #mod
-.end
+	adc #mod
+.positive
+	clc
+	adc input
+
+	bcs overflow
+.no_overflow
+    cmp #mod
+    bcc exit
+.overflow
+    sbc #mod            ; carry guaranteed set
+.exit:
+
 	sta input
 	rts
 ]:NEXT
