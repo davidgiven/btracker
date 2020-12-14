@@ -53,32 +53,29 @@ B_3  = 3*36+33
 BLANK = FIRST_COMMAND + ('B' - 'A')
 OFF = FIRST_COMMAND + ('O' - 'A')
 
+TONE_SAMPLES = 64
+
+TONE_DATA = PATTERN_DATA - (TONE_SAMPLES*2*16)
+MUSIC_DATA = TONE_DATA - &100
+print ~MUSIC_DATA
+
 clear MUSIC_DATA, &7c00
 guard &7c00
 org MUSIC_DATA
     ; Header
-.sequence skip 128
-.tempo  equb 12
+.sequence    skip 128
+.tempo       equb 12
+.samplespeed equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+.repeatstart equb 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.repeatend   equb 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-; Tone information.
+; Tone information. All zeros.
 
-org PATTERN_DATA - 20*16
-.tone_pitch            equb 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_pitch_delta      equb 0, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_pitch_delta_t    equb 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_pitch_period     equb 0,  5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume           equb 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume_delta     equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume_delta_t   equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume_period    equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_tremulo          equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_tremulo_delta    equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_tremulo_delta_t  skip 16
-.tone_tremulo_period   equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_vibrato          equb 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_vibrato_delta    skip 16
-.tone_vibrato_delta_t  skip 16
-.tone_vibrato_period   equb 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+org TONE_DATA
+
+    for i, 0, 63
+        equb i and 63
+    next
 
 ; Stolen from https://www.youtube.com/watch?v=gUGlMhhasno
 

@@ -39,7 +39,6 @@ NOTE_LENGTH = 2 ; pitch, volume/tone; or: command, param
 
 ROW_LENGTH = NOTE_LENGTH * NUM_VOICES
 PATTERN_DATA = &7c00 - (NUM_PATTERNS * NUM_STEPS * ROW_LENGTH)
-MUSIC_DATA = PATTERN_DATA - &200
 
 ; Notes
 
@@ -71,39 +70,17 @@ guard &9f
 
 ; Used by the interrupt-driven player
 
-.cpitch_hi              equb 0, 0, 0, 0 ; current copy (based on tone procedure)
-.cpitch_lo              equb 0, 0, 0, 0
-.cvolume_hi             equb 0, 0, 0, 0
-.cvolume_lo             equb 0, 0, 0, 0
+.cpitch                 equb 0, 0, 0, 0 ; current copy (based on tone procedure)
+.cvolume                equb 0, 0, 0, 0
 .rpitch                 equb 0, 0, 0, 0 ; what the chip is currently playing
 .rvolume                equb 0, 0, 0, 0
+.sampletimer            equb 0, 0, 0, 0 ; time of next sample for voice
+.samplecount            equb 0, 0, 0, 0 ; index of current sample for voice
 .tone                   equb 0, 0, 0, 0 ; current tone
-.tonen_pitch            equb 0, 0, 0, 0 ; time of next pitch event
-.tonen_volume           equb 0, 0, 0, 0 ; time of next volume event
-.tonen_tremulo          equb 0, 0, 0, 0 ; time of next tremulo event
-.tonen_vibrato          equb 0, 0, 0, 0 ; time of next vibrato event
-.tonew_pitch_hi         equb 0, 0, 0, 0 ; tone pitch parameter
-.tonew_pitch_lo         equb 0, 0, 0, 0
-.tonew_pitch_delta_hi   equb 0, 0, 0, 0 ; tone pitch parameter first differential
-.tonew_pitch_delta_lo   equb 0, 0, 0, 0
-.tonew_volume_hi        equb 0, 0, 0, 0 ; tone volume parameter
-.tonew_volume_lo        equb 0, 0, 0, 0
-.tonew_volume_delta_hi  equb 0, 0, 0, 0 ; tone volume parameter first differential
-.tonew_volume_delta_lo  equb 0, 0, 0, 0
-.tonew_tremulo_hi       equb 0, 0, 0, 0 ; tone tremulo parameter
-.tonew_tremulo_lo       equb 0, 0, 0, 0
-.tonew_tremulo_delta_hi equb 0, 0, 0, 0 ; tone tremulo parameter first differential
-.tonew_tremulo_delta_lo equb 0, 0, 0, 0
-.tonew_tremulo_state    equb 0, 0, 0, 0 ; high/low tremulo state
-.tonew_vibrato_hi       equb 0, 0, 0, 0 ; tone vibrato parameter
-.tonew_vibrato_lo       equb 0, 0, 0, 0
-.tonew_vibrato_delta_hi equb 0, 0, 0, 0 ; tone vibrato parameter first differential
-.tonew_vibrato_delta_lo equb 0, 0, 0, 0
-.tonew_vibrato_state    equb 0, 0, 0, 0 ; high/low vibrato state
 .oldirqvector           equw 0          ; previous vector in chain
 .tickcount              equb 0          ; ticks left in the current note
 .ticks                  equb 0          ; global clock
-.iw                     equb 0          ; interrupt workspace
+.iw                     equw 0          ; interrupt workspace
 
 mapchar '#', 95             ; mode 7 character set
 
@@ -168,13 +145,13 @@ include "src/player.inc"
     jmp next
 
 .*play_current_note
-    ldx #3          ; channel
-    sei             ; atomic wrt the interrupt-driven player
+    ldx #3              ; channel
+    sei                 ; atomic wrt the interrupt-driven player
 
 .loop
     txa
     asl a
-    tay             ; y is offset to note
+    tay                 ; y is offset to note
     lda (rowptr), y
     iny
     cmp #NUM_PITCHES
@@ -185,87 +162,24 @@ include "src/player.inc"
     jmp next
 
 .is_note
-    sta pitch, x
+    sta pitch, x        ; set master pitch
+
     lda (rowptr), y
     tay
     and #&0f
-    sta volume, x
+    sta volume, x       ; set master volume
+
+    lda #0
+    sta samplecount, x  ; sample count starts at zero
+    lda ticks
+    sta sampletimer, x  ; first event happens immediately
+
     tya
     lsr a
     lsr a
     lsr a
     lsr a
-    sta tone, x
-
-    tay             ; y is tone number
-                    ; x is channel
-
-    ; Set event times.
-
-    lda tone_pitch_period, y
-    clc
-    adc ticks
-    sta tonen_pitch, x
-
-    lda tone_volume_period, y
-    clc
-    adc ticks
-    sta tonen_volume, x
-
-    lda tone_tremulo_period, y
-    clc
-    adc ticks
-    sta tonen_tremulo, x
-
-    lda tone_vibrato_period, y
-    clc
-    adc ticks
-    sta tonen_vibrato, x
-
-    ; Set the note value high bytes.
-
-    macro modulus_sign_adjust
-        bpl positive
-        clc
-        adc #NUM_PITCHES
-    .positive
-    endmacro
-
-    lda tone_pitch, y
-    modulus_sign_adjust
-    sta tonew_pitch_hi, x
-    lda tone_pitch_delta, y
-    modulus_sign_adjust
-    sta tonew_pitch_delta_hi, x
-
-    lda tone_volume, y
-    sta tonew_volume_hi, x
-    lda tone_volume_delta, y
-    sta tonew_volume_delta_hi, x
-
-    lda tone_tremulo, y
-    sta tonew_tremulo_hi, x
-    lda tone_tremulo_delta, y
-    sta tonew_tremulo_delta_hi, x
-
-    lda tone_vibrato, y
-    sta tonew_vibrato_hi, x
-    lda tone_vibrato_delta, y
-    sta tonew_vibrato_delta_hi, x
-
-    ; Set the note value low bytes (always zero).
-
-    lda #0
-    sta tonew_pitch_lo, x
-    sta tonew_pitch_delta_lo, x
-    sta tonew_volume_lo, x
-    sta tonew_volume_delta_lo, x
-    sta tonew_tremulo_lo, x
-    sta tonew_tremulo_delta_lo, x
-    sta tonew_tremulo_state, x
-    sta tonew_vibrato_lo, x
-    sta tonew_vibrato_delta_lo, x
-    sta tonew_vibrato_state, x
+    sta tone, x         ; compute tone
 
 .next
     dex
