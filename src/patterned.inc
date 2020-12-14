@@ -56,21 +56,7 @@
     bcs ret
 
     txa
-    ldy #0
-.loop
-    cmp key_table, y
-    bne no_key
-    lda key_table+2, y
-    pha
-    lda key_table+1, y
-    pha
-    rts
-.no_key
-    iny
-    iny
-    iny
-    ldx key_table, y
-    bne loop
+    key_lookup key_table
 
     {
         cmp #'0'
@@ -93,11 +79,6 @@
     
 .ret
     rts
-
-    macro key n, label
-        equb n
-        equw label - 1
-    endmacro
 
     .key_table
         key 162, tone_editor
@@ -896,15 +877,11 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     sta w+0
     lda #hi(data)
     sta w+1
-    lda #40
-    sta scrptr+0
-    lda #&7c
-    sta scrptr+1
-    ldx #80
     jsr draw_packed
     rts
 
 .data
+    equw &7c00 + 40
     equb 144+6      ; cyan
     equb 30, &23, &23, &23
     equb &63, 4, &73, &33, 32

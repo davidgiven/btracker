@@ -82,13 +82,29 @@
     rts
 }
 
-; Display a packed banner at the top of the screen, starting at scrptr, with
-; the address in w. The packing is ludicrously simple: bytes are written, 01-31
-; repeat the next byte that many times, 00 ends.
+; Display a packed banner at the top of the screen, with
+; the address in w. The packing is ludicrously simple: there's an initial
+; destination address, and then bytes are written, 01-31 repeat the next byte
+; that many times, 00 ends.
 
 .draw_packed
 {
 	ldy #0
+    lda (w), y
+    sta scrptr+0
+    iny
+    lda (w), y
+    sta scrptr+1
+
+    clc
+    lda w+0
+    adc #2
+    sta w+0
+    bcc noinc
+    inc w+1
+.noinc
+    ldy #0
+
 .loop
     lda (w), y
     beq done
@@ -123,13 +139,10 @@
     sta w+0
     lda #hi(data)
     sta w+1
-    lda #0
-    sta scrptr+0
-    lda #&7c
-    sta scrptr+1
     jmp draw_packed
 
 .data
+    equw &7c00
     equb 128+4      ; blue
     equs "  File"
     equb 128+4      ; blue

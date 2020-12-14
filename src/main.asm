@@ -112,6 +112,7 @@ guard PATTERN_DATA
     jsr reset_row_pointer
     jmp pattern_editor
 
+include "src/utils.inc"
 include "src/patterned.inc"
 include "src/toneed.inc"
 include "src/screenutils.inc"
