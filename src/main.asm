@@ -1,5 +1,6 @@
 
 putbasic "src/modtest.bas", "modtest"
+putbasic "src/sattest.bas", "sattest"
 
 OSRDCH  = &FFE0
 OSWRCH  = &FFEE

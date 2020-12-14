@@ -64,12 +64,12 @@ org MUSIC_DATA
 
 org PATTERN_DATA - 20*16
 .tone_pitch            equb 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_pitch_delta      equb 1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_pitch_delta_t    equb -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_pitch_delta      equb 0, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_pitch_delta_t    equb 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_pitch_period     equb 5,  5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_volume           equb 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume_delta     equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume_delta_t   skip 16
+.tone_volume_delta     equb -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_volume_delta_t   equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_volume_period    equb 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_tremulo          skip 16
 .tone_tremulo_delta    skip 16

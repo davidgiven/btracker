@@ -53,8 +53,6 @@
 
 .player_routine
 {
-    print ~P%
-
     ; Adjust timers.
 
     dec tickcount
@@ -164,18 +162,19 @@ macro modulus_adjust
 .exit:
 endmacro
 
-macro saturated_add delta
-    clc
-    adc delta, x
-    bvc no_overflow         ; signed overflow
+; After an addition, this forces the value to be saturated to one of the two values.
+macro saturation_adjust lo, hi
+    bmi negative
+    cmp #hi+1
+    blt exit
+    lda #hi
+    jmp exit
 
-    lda delta, x
-    bmi delta_negative
-    lda #15
-    jmp no_overflow
-.delta_negative
-    lda #lo(-15)
-.no_overflow
+.negative
+    cmp #lo
+    bge exit
+    lda #lo
+.exit
 endmacro
 
 ; Called with the channel in y.
@@ -192,7 +191,6 @@ endmacro
 
     ; Pitch
 
-    print ~P%
     {
         {
             lda ticks
@@ -231,7 +229,6 @@ endmacro
             lda tonew_pitch_hi, y
             adc tonew_pitch_delta_hi, y
             modulus_adjust
-
             sta tonew_pitch_hi, y
         .no_adjust
         }
@@ -248,50 +245,72 @@ endmacro
         sta cpitch_hi, y
     }
 
-;    ; Volume
-;
-;    {
-;        lda ticks
-;        cmp tonen_volume, y
-;        bne adjust_value
-;
-;        clc
-;        lda ticks
-;        adc tone_volume_period, x
-;        sta tonen_volume, y
-;
-;        ; Signed saturated addition of unsigned tonew_volume + signed tone_volume_delta.
-;
-;        lda tonew_volume, y
-;        saturated_add tone_volume_delta
-;        sta tonew_volume, y
-;
-;    .adjust_value
-;        clc
-;        lda cvolume, y
-;        adc tonew_volume, y
-;        sta cvolume, y
-;    }
-;
-;    ; Saturated add of volume + cvolume to 0..f.
-;
-;    {
-;        clc
-;        lda volume, y
-;        eor #&80
-;        adc cvolume, y
-;        eor #&80
-;        bvc exit               ; forbid overflow
-;
-;        lda cvolume, y         ; sign extend delta
-;        asl a                  ; get sign
-;        lda #0
-;        adc #&ff               ; negative -> 0, positive -> &ff
-;        and #&0f
-;    .exit
-;        sta cvolume, y
-;    }
-    lda volume, y
+    ; Volume
+
+    {
+        {
+            lda ticks
+            cmp tonen_volume, y
+            bne no_adjust
+
+            clc
+            lda ticks
+            adc tone_volume_period, x
+            sta tonen_volume, y
+
+            ; Adjust tonew_volume_delta (16-bits) by tone_volume_delta_t (8-bits, signed).
+
+            {
+                clc
+                lda tone_volume_delta_t, x
+                adc tonew_volume_delta_lo, y
+                sta tonew_volume_delta_lo, y
+
+                lda tone_volume_delta_t, x
+                and #&80
+                beq positive
+                lda #&ff
+            .positive
+                adc tonew_volume_delta_hi, y
+                saturation_adjust lo(-&f), &f
+                sta tonew_volume_delta_hi, y
+            }
+
+            ; Adjust tonew_volume by tonew_volume_delta (both 16 bit).
+
+            clc
+            lda tonew_volume_lo, y
+            adc tonew_volume_delta_lo, y
+            sta tonew_volume_lo, y
+            lda tonew_volume_hi, y
+            adc tonew_volume_delta_hi, y
+            saturation_adjust lo(-&f), &f
+            sta tonew_volume_hi, y
+        .no_adjust
+        }
+
+        ; Adjust cvolume by tonew_volume.
+
+        clc
+        lda cvolume_lo, y
+        adc tonew_volume_lo, y
+        sta cvolume_lo, y
+        lda cvolume_hi, y
+        adc tonew_volume_hi, y
+        saturation_adjust lo(-&f), &f
+        sta cvolume_hi, y
+    }
+
+    ; Saturated add of volume + cvolume_hi.
+
+    clc
+    lda cvolume_hi, y
+    adc volume, y
+    saturation_adjust lo(-&f), &f
+    cmp #0
+    bpl positive
+    lda #0
+.positive
     sta cvolume_hi, y
 
     ; Modulus add of pitch + cpitch_hi.
