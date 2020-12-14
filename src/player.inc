@@ -301,6 +301,144 @@ endmacro
         sta cvolume_hi, y
     }
 
+    ; Vibrato
+
+    {
+        {
+            lda ticks
+            cmp tonen_vibrato, y
+            bne no_adjust
+
+            clc
+            lda ticks
+            adc tone_vibrato_period, x
+            sta tonen_vibrato, y
+
+            ; Flip the state bit.
+
+            lda tonew_vibrato_state, y
+            eor #1
+            sta tonew_vibrato_state, y
+
+            ; Adjust tonew_vibrato_delta (16-bits) by tone_pitch_delta_t (8-bits, signed).
+
+            ;{
+            ;    clc
+            ;    lda tone_vibrato_delta_t, x
+            ;    adc tonew_vibrato_delta_lo, y
+            ;    sta tonew_vibrato_delta_lo, y
+
+            ;    lda tone_vibrato_delta_t, x
+            ;    and #&80
+            ;    beq positive
+            ;    lda #NUM_PITCHES-1
+            ;.positive
+            ;    adc tonew_vibrato_delta_hi, y
+            ;    modulus_adjust
+            ;    sta tonew_vibrato_delta_hi, y
+            ;}
+
+            ; Adjust tonew_vibrato by tonew_pitch_delta (both 16 bit).
+
+            clc
+            lda tonew_vibrato_lo, y
+            adc tonew_vibrato_delta_lo, y
+            sta tonew_vibrato_lo, y
+            lda tonew_vibrato_hi, y
+            adc tonew_vibrato_delta_hi, y
+            modulus_adjust
+            sta tonew_vibrato_hi, y
+        .no_adjust
+        }
+
+        lda tonew_vibrato_state, y
+        beq positive
+
+        sec
+        lda cpitch_lo, y
+        sbc tonew_vibrato_lo, y
+        sta cpitch_lo, y
+        lda cpitch_hi, y
+        sbc tonew_vibrato_hi, y
+        jmp exit
+
+    .positive
+        clc
+        lda cpitch_lo, y
+        adc tonew_vibrato_lo, y
+        sta cpitch_lo, y
+        lda cpitch_hi, y
+        adc tonew_vibrato_hi, y
+
+    .exit
+        modulus_adjust
+        sta cpitch_hi, y
+    }
+
+    ; Tremulo
+
+    {
+        {
+            lda ticks
+            cmp tonen_tremulo, y
+            bne no_adjust
+
+        print ~P%
+            clc
+            lda ticks
+            adc tone_tremulo_period, x
+            sta tonen_tremulo, y
+
+            ; Flip the state bit.
+
+            lda tonew_tremulo_state, y
+            eor #1
+            sta tonew_tremulo_state, y
+
+            ;; Adjust tonew_volume_delta (16-bits) by tone_volume_delta_t (8-bits, signed).
+
+            ;{
+            ;    clc
+            ;    lda tone_volume_delta_t, x
+            ;    adc tonew_volume_delta_lo, y
+            ;    sta tonew_volume_delta_lo, y
+
+            ;    lda tone_volume_delta_t, x
+            ;    and #&80
+            ;    beq positive
+            ;    lda #&ff
+            ;.positive
+            ;    adc tonew_volume_delta_hi, y
+            ;    saturation_adjust lo(-&f), &f
+            ;    sta tonew_volume_delta_hi, y
+            ;}
+
+            ; Adjust tonew_volume by tonew_volume_delta (both 16 bit).
+
+            clc
+            lda tonew_tremulo_lo, y
+            adc tonew_tremulo_delta_lo, y
+            sta tonew_tremulo_lo, y
+            lda tonew_tremulo_hi, y
+            adc tonew_tremulo_delta_hi, y
+            saturation_adjust lo(-&f), &f
+            sta tonew_tremulo_hi, y
+        .no_adjust
+        }
+
+        ; Adjust cvolume by tonew_tremulo.
+
+        lda tonew_tremulo_state, y
+        beq no_change
+
+        sec
+        lda cvolume_hi, y
+        sbc tonew_tremulo_hi, y
+        saturation_adjust lo(-&f), &f
+        sta cvolume_hi, y
+    .no_change
+    }
+
     ; Saturated add of volume + cvolume_hi.
 
     clc

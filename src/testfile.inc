@@ -66,19 +66,19 @@ org PATTERN_DATA - 20*16
 .tone_pitch            equb 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_pitch_delta      equb 0, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_pitch_delta_t    equb 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_pitch_period     equb 5,  5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_pitch_period     equb 0,  5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_volume           equb 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume_delta     equb -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_volume_delta     equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_volume_delta_t   equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_volume_period    equb 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.tone_tremulo          skip 16
-.tone_tremulo_delta    skip 16
+.tone_volume_period    equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_tremulo          equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_tremulo_delta    equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_tremulo_delta_t  skip 16
-.tone_tremulo_period   skip 16
-.tone_vibrato          skip 16
+.tone_tremulo_period   equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tone_vibrato          equb 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .tone_vibrato_delta    skip 16
 .tone_vibrato_delta_t  skip 16
-.tone_vibrato_period   skip 16
+.tone_vibrato_period   equb 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 ; Stolen from https://www.youtube.com/watch?v=gUGlMhhasno
 

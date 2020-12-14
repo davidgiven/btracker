@@ -94,10 +94,12 @@ guard &9f
 .tonew_tremulo_lo       equb 0, 0, 0, 0
 .tonew_tremulo_delta_hi equb 0, 0, 0, 0 ; tone tremulo parameter first differential
 .tonew_tremulo_delta_lo equb 0, 0, 0, 0
+.tonew_tremulo_state    equb 0, 0, 0, 0 ; high/low tremulo state
 .tonew_vibrato_hi       equb 0, 0, 0, 0 ; tone vibrato parameter
 .tonew_vibrato_lo       equb 0, 0, 0, 0
 .tonew_vibrato_delta_hi equb 0, 0, 0, 0 ; tone vibrato parameter first differential
 .tonew_vibrato_delta_lo equb 0, 0, 0, 0
+.tonew_vibrato_state    equb 0, 0, 0, 0 ; high/low vibrato state
 .oldirqvector           equw 0          ; previous vector in chain
 .tickcount              equb 0          ; ticks left in the current note
 .ticks                  equb 0          ; global clock
@@ -260,8 +262,10 @@ include "src/player.inc"
     sta tonew_volume_delta_lo, x
     sta tonew_tremulo_lo, x
     sta tonew_tremulo_delta_lo, x
+    sta tonew_tremulo_state, x
     sta tonew_vibrato_lo, x
     sta tonew_vibrato_delta_lo, x
+    sta tonew_vibrato_state, x
 
 .next
     dex
