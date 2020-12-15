@@ -63,12 +63,18 @@ clear MUSIC_DATA, &7c00
 guard &7c00
 org MUSIC_DATA
     ; Header
-.sequence    skip 128
-.tempo       equb 12
-.samplespeed equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-.pitchscale  equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-.repeatstart equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.repeatend   equb 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.sequence
+    equb 0
+    for i, 1, 127
+        equb &ff
+    next
+
+.tempo         equb 12
+.patternlength equb &1f
+.samplespeed   equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+.pitchscale    equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+.repeatstart   equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.repeatend     equb 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 ; Tone information. All zeros.
 

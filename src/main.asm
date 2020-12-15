@@ -78,6 +78,7 @@ guard &9f
 
 .rowptr                 equw 0    ; pointer to current row
 .patternno              equb 0    ; current pattern number
+.seqindex               equb 0    ; current index into the sequence
 .rowno                  equb 0    ; current row number
 .disptr                 equw 0    ; pointer to row being displayed
 .disrow                 equb 0    ; row number being displayed

@@ -6,6 +6,7 @@
     txs
     jsr setup_screen_for_pattern_editor
 .current_note_has_changed
+    jsr draw_sequence
     jsr play_current_note
 .main_loop
     jsr draw_screen
@@ -70,14 +71,18 @@
     {
         cmp #'A'
         blt no
-        cmp #'G'+1
+        cmp #'Z'+1
         blt letter_key
     .no
     }
 
-    cmp #27
-    blt command_key
-    
+    {
+        cmp #'a'
+        blt no
+        cmp #'z'+1
+        blt letter_key
+    .no
+    }
 .ret
     rts
 
@@ -94,6 +99,9 @@
         key 62, tempo_up
         key 32, playstop
         key 27, panic
+        key 'S'-'@', key_save_to_sequence
+        key 'A'-'@', key_insert_into_sequence
+        key 'D'-'@', key_delete_from_sequence
         equb 0
 
     .number_key
@@ -105,13 +113,20 @@
 
     .letter_key
     {
+        and #lo(not(&20))
+        pha
+        jsr detect_shift
+        beq shifted
+        pla
         sec
         sbc #'A'-10
         jmp set_value
-    }
 
-    .command_key
-    {
+    .shifted
+        pla
+        sec
+        sbc #'@'
+    .*command_key
         clc
         adc #FIRST_COMMAND-1
         tax
@@ -126,8 +141,8 @@
 
     .key_up
     {
-        jsr detect_shift
-        beq shifted
+        jsr detect_ctrl
+        beq ctrl
 
         lda rowno
         sec
@@ -141,7 +156,7 @@
         sta rowptr+0
         rts
 
-    .shifted
+    .ctrl
         lda patternno
         clc
         adc #1
@@ -152,8 +167,8 @@
 
     .key_down
     {
-        jsr detect_shift
-        beq shifted
+        jsr detect_ctrl
+        beq ctrl
 
         lda rowno
         clc
@@ -167,7 +182,7 @@
         sta rowptr+0
         rts
 
-    .shifted
+    .ctrl
         lda patternno
         sec
         sbc #1
@@ -178,21 +193,49 @@
 
     .key_left
     {
+        jsr detect_ctrl
+        beq ctrl
+
         lda cursorx
         beq ret
         dec cursorx
     .ret
         rts
+
+    .ctrl
+        ldx seqindex
+        beq ret
+        dex
+        stx seqindex
+        lda sequence, x
+        sta patternno
+        jsr draw_sequence
+        jmp reset_row_pointer
     }
 
     .key_right
     {
+        jsr detect_ctrl
+        beq ctrl
+
         lda cursorx
         cmp #15
         beq ret
         inc cursorx
     .ret
         rts
+
+    .ctrl
+        ldx seqindex
+        cpx #127
+        beq ret
+        inx
+        lda sequence, x
+        bmi ret
+        sta patternno
+        stx seqindex
+        jsr draw_sequence
+        jmp reset_row_pointer
     }
 
     .key_tab
@@ -268,6 +311,52 @@
         dex
         bpl loop
         rts
+    }
+
+    .key_save_to_sequence
+    {
+        ldx seqindex
+        lda patternno
+        sta sequence, x
+        jmp draw_sequence
+    }
+
+    .key_insert_into_sequence
+    {
+        ldx #127
+    .loop
+        lda sequence-1, x
+        sta sequence, x
+        dex
+        cpx seqindex
+        bne loop
+        jmp draw_sequence
+    }
+
+    .key_delete_from_sequence
+    {
+        ldx seqindex
+        inx
+        bmi ret             ; don't delete if we're on the last seq index
+        lda sequence, x
+        bpl go              ; don't delete the last item
+    .ret
+        rts
+
+    .go
+        ldx seqindex
+    .loop
+        lda sequence+1, x
+        sta sequence, x
+        inx
+        cpx #127
+        bne loop
+
+        ldx seqindex
+        lda sequence, x
+        sta patternno
+        jsr reset_row_pointer
+        jmp draw_sequence
     }
 
     .detect_shift
@@ -586,7 +675,55 @@
 
 ; --- Pattern drawing -------------------------------------------------------
 
-; Draw the entire screen.
+; Draw the sequence view.
+
+SEQUENCE_ADDRESS = &7c00 + 2*40 + 1
+.draw_sequence
+{
+    ldy #38
+    lda #' '
+.loop1
+    sta SEQUENCE_ADDRESS, y
+    dey
+    bpl loop1
+
+    lda #lo(SEQUENCE_ADDRESS)
+    sta scrptr+0
+    lda #hi(SEQUENCE_ADDRESS)
+    sta scrptr+1
+
+    ldx #0          ; count
+    lda seqindex
+    sec
+    sbc #6
+    tay             ; sequence index
+.loop2
+    cpy #0
+    bpl draw
+.skip
+    lda #3
+    jsr advance_scrptr
+    jmp next
+.draw
+    lda sequence, y
+    bmi skip
+    stx p
+    sty q
+    jsr print_h8
+    lda #' '
+    jsr print_char
+    ldx p
+    ldy q
+.next
+    iny
+    inx
+    cpx #13
+    bne loop2
+
+    rts
+}
+
+; Draw the note view..
 
 LINE_PADDING = 0
 PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
