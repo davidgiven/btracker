@@ -1,7 +1,7 @@
-PITCH_GRAPH_X = 14
+PITCH_GRAPH_X = 12
 PITCH_GRAPH_Y = 37
 
-VOLUME_GRAPH_X = 14
+VOLUME_GRAPH_X = 12
 VOLUME_GRAPH_Y = 58
 
 TONE_ADDRESS        = &7c00 + 14 + 2*40
@@ -28,25 +28,26 @@ EDIT_VOLUME = 6
     jsr panic
 
 .editloop
-    jsr draw_cursor
-    lda #&81
-    ldx #32         ; 320ms
-    ldy #0
-    jsr OSBYTE
-    bcc key_pressed_with_cursor_on
-    jsr draw_cursor
+    jsr move_hardware_cursor
     lda #&81
     ldx #32         ; 320ms
     ldy #0
     jsr OSBYTE
     txa
     bcc key_pressed_with_cursor_off
+    jsr toggle_teletext_cursor
+    lda #&81
+    ldx #32         ; 320ms
+    ldy #0
+    jsr OSBYTE
+    txa
+    bcc key_pressed_with_cursor_on
+    jsr toggle_teletext_cursor
     jmp editloop
     
 .key_pressed_with_cursor_on
-    txa
     pha
-    jsr draw_cursor
+    jsr toggle_teletext_cursor
     pla
 .key_pressed_with_cursor_off
     jsr do_key
@@ -230,7 +231,7 @@ EDIT_VOLUME = 6
         rts
     }
 
-    .draw_cursor
+    .move_hardware_cursor
     {
         lda editcursory
         cmp #EDIT_TONE
@@ -243,35 +244,7 @@ EDIT_VOLUME = 6
         beq edit_repeatstart
         cmp #EDIT_REPEATEND
         beq edit_repeatend
-        cmp #EDIT_VOLUME
-        beq edit_volume
-    .edit_pitch
-        ldy editcursorx
-        sec
-        lda #PITCH_GRAPH_Y
-        sbc (editsampledata), y ; pitch
-        tay
-        lda #PITCH_GRAPH_X
-    .cursor_on_graph
-        clc
-        adc editcursorx
-        tax
-        jsr plot
-        eor (w), y
-        sta (w), y
         jmp cursor_off
-
-    .edit_volume
-        lda editcursory
-        clc
-        adc #64
-        tay
-        sec
-        lda #VOLUME_GRAPH_Y
-        sbc (editsampledata), y ; volume
-        tay
-        lda #VOLUME_GRAPH_X
-        jmp cursor_on_graph
 
     .edit_tone
         ldx #lo(TONE_ADDRESS)
@@ -302,6 +275,44 @@ EDIT_VOLUME = 6
         ldy #hi(REPEATEND_ADDRESS)
         jsr move_cursor
         jmp cursor_on
+    }
+
+    .toggle_teletext_cursor
+    {
+        lda editcursory
+        cmp #EDIT_PITCH
+        beq edit_pitch
+        cmp #EDIT_VOLUME
+        beq edit_volume
+        rts
+
+    .edit_pitch
+        ldy editcursorx
+        sec
+        lda #PITCH_GRAPH_Y
+        sbc (editsampledata), y ; pitch
+        tay
+        lda #PITCH_GRAPH_X
+    .cursor_on_graph
+        clc
+        adc editcursorx
+        tax
+        jsr plot
+        eor (w), y
+        sta (w), y
+        jmp cursor_off
+
+    .edit_volume
+        lda editcursorx
+        clc
+        adc #64
+        tay
+        sec
+        lda #VOLUME_GRAPH_Y
+        sbc (editsampledata), y ; volume
+        tay
+        lda #VOLUME_GRAPH_X
+        jmp cursor_on_graph
     }
 
     ; On entry, A is the delta.
@@ -439,122 +450,140 @@ EDIT_VOLUME = 6
         equb 20, ' '
         equb 20, ' '
 
-        equb 3, ' '
+        equb 2, ' '
         equb 128+6      ; cyan
         equs "+"
         equb 144+7      ; white
-        equb &28
+        equb &2c
         equb 31, ' '
+        equb ' ', &2c
 
-        equb 7, ' '
+        equb 5, ' '
         equb 144+7      ; white
         equb &62
         equb 31, ' '
+        equb ' ', &31
 
-        equb 7, ' '
+        equb 5, ' '
         equb 144+7      ; white
         equb &28
         equb 31, ' '
+        equb ' ', &24
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'P'
         equb 3, 144+7    ; white
         equb &62
         equb 31, ' '
+        equb ' ', &31
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'I'
         equb 3, 144+7   ; white
         equb &28
         equb 31, ' '
+        equb ' ', &24
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'T'
         equb 128+6      ; cyan
         equs "0"
         equb 144+7      ; white
-        equb &62
-        equb 31, &28, &28
+        equb &6e
+        equb 31, ' '
+        equb ' ', &3d
 
-        equb 2, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'C'
         equb 3, 144+7   ; white
         equb &28
         equb 31, ' '
+        equb ' ', &24
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'H'
         equb 3, 144+7   ; white
         equb &62
         equb 31, ' '
+        equb ' ', &31
 
-        equb 7, ' '
+        equb 5, ' '
         equb 144+7      ; white
         equb &28
         equb 31, ' '
+        equb ' ', &24
 
-        equb 7, ' '
+        equb 5, ' '
         equb 144+7      ; white
         equb &62
         equb 31, ' '
+        equb ' ', &31
 
-        equb 5, ' '
+        equb 3, ' '
         equb 128+6      ; cyan
         equs "-"
         equb 144+7      ; white
-        equb &28
+        equb &2c
         equb 31, ' '
+        equb ' ', &2c
 
-        equb 20, ' ', 23, ' '
+        equb 20, ' ', 21, ' '
 
         equb 128+1      ; red
         equb 'V'
         equb 128+6      ; cyan
         equs "0"
         equb 144+7      ; white
-        equb 31, &28, 2, &28
+        equb &2c
+        equb 31, ' '
+        equb ' ', &2c
 
-        equb 2, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'O'
         equb 3, 144+7      ; white
-        equb &28
+        equb &62
         equb 31, ' '
+        equb ' ', &31
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'L'
         equb 3, 144+7      ; white
-        equb &62
+        equb &28
         equb 31, ' '
+        equb ' ', &24
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'U'
         equb 3, 144+7      ; white
-        equb &28
+        equb &62
         equb 31, ' '
+        equb ' ', &31
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'M'
         equb 3, 144+7      ; white
-        equb &62
+        equb &28
         equb 31, ' '
+        equb ' ', &24
 
-        equb 3, ' '
+        equb ' '
         equb 128+1      ; red
         equb 'E'
         equb 128+6      ; cyan
         equs "-"
         equb 144+7      ; white
-        equb &28
+        equb &2e
         equb 31, ' '
+        equb ' ', &2d
         equb 0
     }
 }
