@@ -589,7 +589,7 @@
 ; Draw the entire screen.
 
 LINE_PADDING = 0
-PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
+PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
 .draw_screen
 {
     lda #lo(PATTERN_NUMBER_ADDRESS)
@@ -895,43 +895,38 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     rts
 
 .data
-    equw &7c00 + 40
-    equb 144+6      ; cyan
-    equb 30, &23, &23, &23
-    equb &63, 4, &73, &33, 32
+    equw &7c00 + 80
 
-    equb 31, 'q'
-    equb 141        ; double height
+    equb 128+3      ; yellow
+    equb 20, ' '
+    equb 19, ' '
+
     equb 144+6      ; cyan
-    equb &6a
+    equb 15, &70
+    equb &7a
     equb 128+7      ; white
-    equs "00"
-    equb 144+6      ; cyan
-    equb &35
-    equb ' '
-
-    equb 31, 'w'
     equb 141        ; double height
-    equb 144+6      ; cyan
-    equb &6a
-    equb 128+7      ; white
     equs "00"
+    equb 140        ; normal height
     equb 144+6      ; cyan
-    equb &35
+    equb &75
+    equb 15, &70
     equb ' '
 
-    equb 31, 'r'
-    equb ' '
-    equb 144+6      ; cyan
-    equb &22
-    equb 4, &23
-    equb &21
-    equb ' '
+    equb 141
+    equb 18, ' '
+    equs "00"
+    equb 19, ' '
 
-    equb 20, 's'
-    equb 20, 's'
-    equb 20, 't'
-    equb 20, 't'
+    equb 128+6      ; cyan
+    equs "Current tempo:"
+    equb 128+7      ; white
+    equb 24, 's'
+
+    equb 128+6      ; cyan
+    equs "Pattern length:"
+    equb 128+7      ; white
+    equb 23, 't'
 
     equb 144+6      ; cyan
     equb 6, &2c

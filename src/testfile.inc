@@ -83,7 +83,7 @@ org TONE_DATA
     ; Pattern 0
 
 org PATTERN_DATA + 0*&100
-    equb D_1,   &0f, F_0,   &00, BLANK, 0, BLANK, 0
+    equb OFF,   &0f, OFF,   &00, BLANK, 0, BLANK, 0
     equb BLANK, 0,   OFF,   &0e, BLANK, 0, BLANK, 0
     equb G_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
     equb G_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
