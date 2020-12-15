@@ -204,11 +204,14 @@ endmacro
     ; Compute pitch.
 
     {
-        lda samplecount, x
-        tay
+        ldy samplecount, x
         clc
-        lda pitch, x
-        adc (iw), y
+        lda (iw), y
+        bpl positive
+        adc #NUM_PITCHES
+        clc
+    .positive
+        adc pitch, x
         modulus_adjust
         sta cpitch, x
     }
