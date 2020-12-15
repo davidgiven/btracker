@@ -9,6 +9,7 @@ SCALE_ADDRESS       = TONE_ADDRESS + 40
 SAMPLERATE_ADDRESS  = SCALE_ADDRESS + 40
 REPEATSTART_ADDRESS = SAMPLERATE_ADDRESS + 40
 REPEATEND_ADDRESS   = REPEATSTART_ADDRESS + 6
+NOTE_ADDRESS        = &7c00 + 35 + 2*40 
 
 EDIT_TONE = 0
 EDIT_SCALE = 1
@@ -55,7 +56,104 @@ EDIT_VOLUME = 6
 
 .do_key
     key_lookup key_table
+
+    {
+        cmp #'0'
+        blt no
+        cmp #'5'+1
+        blt number_key
+    .no
+    }
+
+    {
+        cmp #'A'
+        blt no
+        cmp #'G'+1
+        blt letter_key
+    .no
+    }
+
     rts
+
+.letter_key
+{
+    sec
+    sbc #'A'
+    blt nochange
+    cmp #8
+    bge nochange
+
+    pha
+    ldx editnote
+    lda note_decode_table, x    ; decode to octave, pitch
+    lsr a
+    lsr a
+    lsr a
+    lsr a                       ; extract octave number
+    tax
+    lda octave_to_note_table, x ; get pitch of C for this octave
+    sta p
+    pla
+
+    tax
+    lda name_to_note_table, x   ; get relative pitch of this note
+    clc
+    adc p                       ; adjust for octave
+    sta editnote
+    jsr redraw_current_note
+    jmp play_note
+.nochange
+    rts
+}
+
+.number_key
+{
+    sec
+    sbc #'0'
+    blt nochange
+    cmp #6
+    bge nochange
+    sta p
+
+    lda editnote
+    tax
+    lda note_decode_table, x    ; decode to octave, pitch
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    tax
+    cmp p                       ; test current octave against desired
+    blt raise
+
+.lower
+    lda editnote
+.decrease_loop
+    sec
+    sbc #12*3
+    bcc nochange
+    dex
+    cpx p
+    bne decrease_loop
+    jmp ret
+
+.raise
+    lda editnote
+.increase_loop
+    clc
+    adc #12*3
+    cmp #NUM_PITCHES
+    bge nochange
+    inx
+    cpx p
+    bne increase_loop
+.ret
+    sta editnote
+    jsr redraw_current_note
+    jmp play_note
+.nochange
+    rts
+}
 
 .key_table
     key 161, pattern_editor
@@ -65,6 +163,7 @@ EDIT_VOLUME = 6
     key 137, key_right
     key 43, key_increment
     key 45, key_decrement
+    key 32, play_note
     key 27, panic
     equb 0
 
@@ -79,6 +178,27 @@ EDIT_VOLUME = 6
         rts
     }
 
+    .play_note
+    {
+        sei
+        lda editnote
+        sta pitch+0
+
+        lda #&f
+        sta volume+0
+
+        lda #0
+        sta samplecount+0
+        lda ticks
+        sta sampletimer+0
+
+        lda edittone
+        sta tone+0
+        cli
+
+        rts
+    }
+        
     .key_up
     {
         lda editcursory
@@ -191,6 +311,8 @@ EDIT_VOLUME = 6
         lda repeatend, x
         jsr print_h8
 
+        jsr redraw_current_note
+
         ; Draw the graphs.
 
         lda #63              ; X position
@@ -229,6 +351,16 @@ EDIT_VOLUME = 6
         dec p
         bpl loop
         rts
+    }
+
+    .redraw_current_note
+    {
+        lda #lo(NOTE_ADDRESS)
+        sta scrptr+0
+        lda #hi(NOTE_ADDRESS)
+        sta scrptr+1
+        lda editnote
+        jmp draw_raw_note
     }
 
     .move_hardware_cursor
@@ -426,7 +558,9 @@ EDIT_VOLUME = 6
         equb 128+6      ; cyan
         equs "Tone:"
         equb 128+7      ; white
-        equb 31, ' ', 2, ' '
+        equb 27, ' '
+        equb 128+3      ; yellow
+        equb 5, ' '
 
         equb 128+6      ; cyan
         equs "Pitch scale:"

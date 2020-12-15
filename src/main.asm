@@ -91,6 +91,8 @@ guard &9f
 .editsampledata         equw 0    ; pointer to the current tone's sample data
 .editcursorx            equb 0    ; current cursor position in a graph
 .editcursory            equb 0    ; what thing is being edited
+.editnote               equb 0    ; the current test note
+.editchannel            equb 0    ; what channel we're playing the test note on
 
 print "Zero page usage:", ~P%, "out of 9f"
 

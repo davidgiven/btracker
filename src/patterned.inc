@@ -757,59 +757,13 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
 
 .draw_note
 {
-    ; Pitch
+    ; Note
 
     ldy #0
     lda (disptr), y
     cmp #FIRST_COMMAND
     bge is_a_command
-    tax
-    lda note_decode_table, x
-    bmi not_a_note
-    pha
-    and #&0f
-    asl a
-    tay
-    pha
-    lda note_to_name_table, y
-    jsr print_char
-    pla
-    tay
-    iny
-    lda note_to_name_table, y
-    jsr print_char
-    pla
-    lsr a
-    lsr a
-    lsr a
-    lsr a
-    jsr print_h4
-    jmp next
-
-.*draw_drum
-    ldy #0
-    lda (disptr), y
-    cmp #FIRST_COMMAND
-    bge is_a_command
-    asl a
-    clc
-    adc (disptr), y
-    tax
-    lda drum_to_name_tabe, x
-    jsr print_char
-    inx
-    lda drum_to_name_tabe, x
-    jsr print_char
-    inx
-    lda drum_to_name_tabe, x
-    jsr print_char
-    jmp next
-
-.not_a_note
-    lda #'?'
-    jsr print_char
-    txa
-    jsr print_h8
+    jsr draw_raw_note
 .next
     lda #' '
     jsr print_char
@@ -826,6 +780,14 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
     inc disptr+0
     inc disptr+0
     rts
+
+.*draw_drum
+    ldy #0
+    lda (disptr), y
+    cmp #FIRST_COMMAND
+    bge is_a_command
+    jsr draw_raw_drum
+    jmp next
 
 .is_a_command
     cmp #FIRST_COMMAND + ('O' - 'A')
@@ -865,6 +827,57 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 2*40 + 35
         jsr print_char
         jmp done
     }
+}
+
+; Draws the raw note in A to scrptr. Advances it. Does not draw the tone/volume byte.
+
+.draw_raw_note
+{
+    tax
+    lda note_decode_table, x
+    bmi not_a_note
+    pha
+    and #&0f
+    asl a
+    tay
+    pha
+    lda note_to_name_table, y
+    jsr print_char
+    pla
+    tay
+    iny
+    lda note_to_name_table, y
+    jsr print_char
+    pla
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    jmp print_h4
+
+.not_a_note
+    lda #'?'
+    jsr print_char
+    txa
+    jmp print_h8
+}
+
+; Draws the raw drum thingy in A to scrptr. Advances it. Does not draw the tone/volume byte.
+
+.draw_raw_drum
+{
+    asl a
+    clc
+    adc (disptr), y
+    tax
+    lda drum_to_name_tabe, x
+    jsr print_char
+    inx
+    lda drum_to_name_tabe, x
+    jsr print_char
+    inx
+    lda drum_to_name_tabe, x
+    jmp print_char
 }
 
 .setup_screen_for_pattern_editor
