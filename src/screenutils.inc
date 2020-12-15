@@ -178,5 +178,65 @@
     rts
 }
 
+; Plots a point at X, Y on the teletext grid. Sets w to the address and leaves the pixel in A.
+; Y is left 0 ready for dereferencing.
+
+.plot
+{
+    ; Y direction: look up the line in the table.
+
+    lda teletext_line_table_lo, y
+    sta w+0
+    lda teletext_line_table_hi, y
+    sta w+1
+
+    lda remainder_by_three, y
+    tay
+
+    ; X direction: divide by two and add to get the address.
+
+    txa
+    lsr a
+    clc
+    adc w+0
+    sta w+0
+    bcc noadd
+    inc w+1
+.noadd
+
+    ; Fetch the pixel value.
+
+    txa
+    lsr a
+    tya
+    rol a
+    tax
+    lda pixel_table, x
+
+    print ~P%
+    ldy #0
+    rts
+}
+
+; Start address of each teletext line.
+
+.teletext_line_table_hi
+    for i, 0, 74
+        equb hi(&7c00 + (i div 3)*40)
+    next
+
+.teletext_line_table_lo
+    for i, 0, 74
+        equb lo(&7c00 + (i div 3)*40)
+    next
+
+.remainder_by_three
+    for i, 0, 74
+        equb i mod 3
+    next
+
+.pixel_table
+    equb 1, 2, 4, 8, &10, &40
+
 ; vim: sw=4 ts=4 et ft=asm
 

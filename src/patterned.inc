@@ -261,7 +261,7 @@
     {
         lda #0
         sta playing
-        ldx #2
+        ldx #3
     .loop
         sta volume, x
         dex

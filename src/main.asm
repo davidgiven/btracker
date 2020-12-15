@@ -59,14 +59,6 @@ guard &9f
 .w            equw 0
 .q            equb 0
 .p            equb 0
-.rowptr       equw 0           ; pointer to current row
-.patternno    equb 0           ; current pattern number
-.rowno        equb 0           ; current row number
-.disptr       equw 0           ; pointer to row being displayed
-.disrow       equb 0           ; row number being displayed
-.scrptr       equw 0           ; screen pointer
-.cursorx      equb 0           ; position of cursor (0-15)
-.playing      equb 0           ; are we playing or not?
 
 ; Used by the interrupt-driven player
 
@@ -81,6 +73,26 @@ guard &9f
 .tickcount              equb 0          ; ticks left in the current note
 .ticks                  equb 0          ; global clock
 .iw                     equw 0          ; interrupt workspace
+
+; Pattern editor variables
+
+.rowptr                 equw 0    ; pointer to current row
+.patternno              equb 0    ; current pattern number
+.rowno                  equb 0    ; current row number
+.disptr                 equw 0    ; pointer to row being displayed
+.disrow                 equb 0    ; row number being displayed
+.scrptr                 equw 0    ; screen pointer
+.cursorx                equb 0    ; position of cursor (0-15)
+.playing                equb 0    ; are we playing or not?
+
+; Tone editor variables
+
+.edittone               equb 0    ; the tone we're currently editing
+.editsampledata         equw 0    ; pointer to the current tone's sample data
+.editcursor             equb 0    ; current cursor position
+.editmode               equb 0    ; what thing is being edited
+
+print "Zero page usage:", ~P%, "out of 9f"
 
 mapchar '#', 95             ; mode 7 character set
 

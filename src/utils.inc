@@ -24,6 +24,12 @@ macro key n, label
     equw label - 1
 endmacro
 
+; Useful identity table.
+
+.identity
+    for i, 0, 255
+        equb i
+    next
 
 ; vim: ts=4 sw=4 et ft=asm
 

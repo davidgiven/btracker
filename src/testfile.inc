@@ -74,7 +74,7 @@ org MUSIC_DATA
 org TONE_DATA
 
     for i, 0, 63
-        equb i and 63
+        equb 0
     next
 
 ; Stolen from https://www.youtube.com/watch?v=gUGlMhhasno
