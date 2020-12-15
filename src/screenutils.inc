@@ -54,6 +54,28 @@
     rts
 }
 
+; Turns the text cursor on.
+
+.cursor_on
+{
+    lda #10
+    sta CRTC_ADDRESS
+    lda #64
+    sta CRTC_DATA
+    rts
+}
+
+; Turns the text cursor off.
+
+.cursor_off
+{
+    lda #10
+    sta CRTC_ADDRESS
+    lda #32
+    sta CRTC_DATA
+    rts
+}
+
 ; Advances the screen pointer by A bytes.
 
 .advance_scrptr

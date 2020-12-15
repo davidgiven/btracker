@@ -4,6 +4,20 @@ PITCH_GRAPH_Y = 37
 VOLUME_GRAPH_X = 14
 VOLUME_GRAPH_Y = 58
 
+TONE_ADDRESS        = &7c00 + 14 + 2*40
+SCALE_ADDRESS       = TONE_ADDRESS + 40
+SAMPLERATE_ADDRESS  = SCALE_ADDRESS + 40
+REPEATSTART_ADDRESS = SAMPLERATE_ADDRESS + 40
+REPEATEND_ADDRESS   = REPEATSTART_ADDRESS + 6
+
+EDIT_TONE = 0
+EDIT_SCALE = 1
+EDIT_SAMPLERATE = 2
+EDIT_REPEATSTART = 3
+EDIT_REPEATEND = 4
+EDIT_PITCH = 5
+EDIT_VOLUME = 6
+
 .tone_editor
 {
     ldx #0
@@ -16,12 +30,25 @@ VOLUME_GRAPH_Y = 58
 .editloop
     jsr draw_cursor
     lda #&81
-    ldx #0
+    ldx #32         ; 320ms
     ldy #0
     jsr OSBYTE
-    bcs editloop
-    
+    bcc key_pressed_with_cursor_on
+    jsr draw_cursor
+    lda #&81
+    ldx #32         ; 320ms
+    ldy #0
+    jsr OSBYTE
     txa
+    bcc key_pressed_with_cursor_off
+    jmp editloop
+    
+.key_pressed_with_cursor_on
+    txa
+    pha
+    jsr draw_cursor
+    pla
+.key_pressed_with_cursor_off
     jsr do_key
     jmp editloop
 
@@ -31,6 +58,8 @@ VOLUME_GRAPH_Y = 58
 
 .key_table
     key 161, pattern_editor
+    key 139, key_up
+    key 138, key_down
     key 136, key_left
     key 137, key_right
     key 43, key_increment
@@ -49,29 +78,55 @@ VOLUME_GRAPH_Y = 58
         rts
     }
 
+    .key_up
+    {
+        lda editcursory
+        sec
+        sbc #1
+        cmp #&ff
+        bne t
+        lda #EDIT_VOLUME
+    .t
+        sta editcursory
+        rts
+    }
+
+    .key_down
+    {
+        lda editcursory
+        clc
+        adc #1
+        cmp #EDIT_VOLUME+1
+        bne t
+        lda #0
+    .t
+        sta editcursory
+        rts
+    }
+
     .key_left
     {
-        lda editcursor
+        lda editcursorx
         sec
         sbc #1
         and #63
-        sta editcursor
+        sta editcursorx
         rts
     }
 
     .key_right
     {
-        lda editcursor
+        lda editcursorx
         clc
         adc #1
         and #63
-        sta editcursor
+        sta editcursorx
         rts
     }
 
     .key_increment
     {
-        ldy editcursor
+        ldy editcursorx
         lda (editsampledata), y
         clc
         adc #1
@@ -84,7 +139,7 @@ VOLUME_GRAPH_Y = 58
 
     .key_decrement
     {
-        ldy editcursor
+        ldy editcursorx
         lda (editsampledata), y
         sec
         sbc #1
@@ -115,12 +170,43 @@ VOLUME_GRAPH_Y = 58
 
     .redraw
     {
+        jsr cursor_off
         jsr setup_screen_for_tone_editor
-        jmp draw_graphs
-    }
 
-    .draw_graphs
-    {
+        ; Draw the status displays.
+
+        lda #lo(TONE_ADDRESS)
+        sta scrptr+0
+        lda #hi(TONE_ADDRESS)
+        sta scrptr+1
+        lda edittone
+        jsr print_h4
+
+        lda #40-1
+        jsr advance_scrptr
+        lda #1
+        jsr print_h8
+
+        lda #40-2
+        jsr advance_scrptr
+        ldx edittone
+        lda samplespeed, x
+        jsr print_h8
+
+        lda #40-2
+        jsr advance_scrptr
+        ldx edittone
+        lda repeatstart, x
+        jsr print_h8
+
+        lda #4
+        jsr advance_scrptr
+        ldx edittone
+        lda repeatend, x
+        jsr print_h8
+
+        ; Draw the graphs.
+
         lda #63              ; X position
         sta p
 
@@ -161,26 +247,76 @@ VOLUME_GRAPH_Y = 58
 
     .draw_cursor
     {
-        lda editcursor
+        lda editcursory
+        cmp #EDIT_TONE
+        beq edit_tone
+        cmp #EDIT_SCALE
+        beq edit_scale
+        cmp #EDIT_SAMPLERATE
+        beq edit_samplerate
+        cmp #EDIT_REPEATSTART
+        beq edit_repeatstart
+        cmp #EDIT_REPEATEND
+        beq edit_repeatend
+        cmp #EDIT_VOLUME
+        beq edit_volume
+    .edit_pitch
+        ldy editcursorx
         sec
         lda #PITCH_GRAPH_Y
         sbc (editsampledata), y ; pitch
-        pha
         tay
-        iny
-        jsr doplot
-        pla
-        tay
-        dey
-    .doplot
-        lda editcursor
+        lda #PITCH_GRAPH_X
+    .cursor_on_graph
         clc
-        adc #PITCH_GRAPH_X
+        adc editcursorx
         tax
         jsr plot
         eor (w), y
         sta (w), y
-        rts
+        jmp cursor_off
+
+    .edit_volume
+        lda editcursory
+        clc
+        adc #64
+        tay
+        sec
+        lda #VOLUME_GRAPH_Y
+        sbc (editsampledata), y ; volume
+        tay
+        lda #VOLUME_GRAPH_X
+        jmp cursor_on_graph
+
+    .edit_tone
+        ldx #lo(TONE_ADDRESS)
+        ldy #hi(TONE_ADDRESS)
+        jsr move_cursor
+        jmp cursor_on
+
+    .edit_scale
+        ldx #lo(SCALE_ADDRESS)
+        ldy #hi(SCALE_ADDRESS)
+        jsr move_cursor
+        jmp cursor_on
+
+    .edit_samplerate
+        ldx #lo(SAMPLERATE_ADDRESS)
+        ldy #hi(SAMPLERATE_ADDRESS)
+        jsr move_cursor
+        jmp cursor_on
+
+    .edit_repeatstart
+        ldx #lo(REPEATSTART_ADDRESS)
+        ldy #hi(REPEATSTART_ADDRESS)
+        jsr move_cursor
+        jmp cursor_on
+
+    .edit_repeatend
+        ldx #lo(REPEATEND_ADDRESS)
+        ldy #hi(REPEATEND_ADDRESS)
+        jsr move_cursor
+        jmp cursor_on
     }
 
     .setup_screen_for_tone_editor
@@ -201,16 +337,28 @@ VOLUME_GRAPH_Y = 58
     .data
         equw &7c00 + 80
 
-        equb 20, ' '
-        equb 20, ' '
+        equb 128+6      ; cyan
+        equs "Tone:"
+        equb 128+7      ; white
+        equb 31, ' ', 2, ' '
 
-        equb 20, ' '
-        equb 20, ' '
+        equb 128+6      ; cyan
+        equs "Pitch scale:"
+        equb 128+7      ; white
+        equb 26, ' '
 
-        equb 20, ' '
-        equb 20, ' '
+        equb 128+6      ; cyan
+        equs "Sample rate:"
+        equb 128+7      ; white
+        equb 26, ' '
 
-        equb 20, ' '
+        equb 128+6      ; cyan
+        equs "Repeat:"
+        equb 128+7      ; white
+        equb 7, ' '
+        equb 128+6      ; cyan
+        equs "to"
+        equb 128+7      ; white
         equb 20, ' '
 
         equb 20, ' '

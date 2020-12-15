@@ -45,11 +45,6 @@
     ldx #0          ; ...disabled
     jsr OSBYTE
 
-    lda #10
-    sta CRTC_ADDRESS
-    lda #64
-    sta CRTC_DATA
-
     ; Load the data file.
 
     lda #&ff

@@ -89,8 +89,8 @@ guard &9f
 
 .edittone               equb 0    ; the tone we're currently editing
 .editsampledata         equw 0    ; pointer to the current tone's sample data
-.editcursor             equb 0    ; current cursor position
-.editmode               equb 0    ; what thing is being edited
+.editcursorx            equb 0    ; current cursor position in a graph
+.editcursory            equb 0    ; what thing is being edited
 
 print "Zero page usage:", ~P%, "out of 9f"
 

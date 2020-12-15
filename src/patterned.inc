@@ -9,6 +9,7 @@
     jsr play_current_note
 .main_loop
     jsr draw_screen
+    jsr cursor_on
 
     ; Play the appropriate number of ticks of music.
 
