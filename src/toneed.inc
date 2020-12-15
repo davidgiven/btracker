@@ -126,28 +126,13 @@ EDIT_VOLUME = 6
 
     .key_increment
     {
-        ldy editcursorx
-        lda (editsampledata), y
-        clc
-        adc #1
-        cmp #&10
-        beq nochange
-        sta (editsampledata), y
-    .nochange
-        jmp redraw
+        lda #1
+        jmp adjust_value
     }
-
     .key_decrement
     {
-        ldy editcursorx
-        lda (editsampledata), y
-        sec
-        sbc #1
-        cmp #lo(-&10)
-        beq nochange
-        sta (editsampledata), y
-    .nochange
-        jmp redraw
+        lda #lo(-1)
+        jmp adjust_value
     }
 
     .select_tone
@@ -228,9 +213,9 @@ EDIT_VOLUME = 6
         clc
         adc #64
         tay
-        clc
+        sec
         lda #VOLUME_GRAPH_Y
-        adc (editsampledata), y ; volume
+        sbc (editsampledata), y ; volume
         tay
         lda p
         clc
@@ -317,6 +302,96 @@ EDIT_VOLUME = 6
         ldy #hi(REPEATEND_ADDRESS)
         jsr move_cursor
         jmp cursor_on
+    }
+
+    ; On entry, A is the delta.
+    .adjust_value
+    {
+        ldx editcursory
+        cpx #EDIT_TONE
+        beq edit_tone
+        cpx #EDIT_SCALE
+        beq edit_scale
+        cpx #EDIT_SAMPLERATE
+        beq edit_samplerate
+        cpx #EDIT_REPEATSTART
+        beq edit_repeatstart
+        cpx #EDIT_REPEATEND
+        beq edit_repeatend
+        cpx #EDIT_VOLUME
+        beq edit_volume
+    .edit_pitch
+    {
+        ldy editcursorx
+        clc
+        adc (editsampledata), y ; pitch
+        cmp #&10
+        bne not_toobig
+        lda #&f
+    .not_toobig
+        cmp #lo(-&10)
+        bne not_toosmall
+        lda #lo(-&f)
+    .not_toosmall
+        sta (editsampledata), y
+        jmp redraw
+    }
+
+    .edit_volume
+    {
+        tax
+        lda editcursorx
+        clc
+        adc #64
+        tay
+        txa
+        clc
+        adc (editsampledata), y ; pitch
+        cmp #1
+        bne not_toobig
+        lda #0
+    .not_toobig
+        cmp #lo(-&10)
+        bne not_toosmall
+        lda #lo(-&f)
+    .not_toosmall
+        sta (editsampledata), y
+        jmp redraw
+    }
+
+    .edit_tone
+        clc
+        adc edittone
+        and #&f
+        sta edittone
+        jsr select_tone
+        jmp redraw
+
+    .edit_scale
+        jmp redraw
+
+    .edit_samplerate
+        ldx edittone
+        clc
+        adc samplespeed, x
+        sta samplespeed, x
+        jmp redraw
+
+    .edit_repeatstart
+        ldx edittone
+        clc
+        adc repeatstart, x
+        and #63
+        sta repeatstart, x
+        jmp redraw
+
+    .edit_repeatend
+        ldx edittone
+        clc
+        adc repeatend, x
+        and #63
+        sta repeatend, x
+        jmp redraw
     }
 
     .setup_screen_for_tone_editor
