@@ -6,38 +6,17 @@
     lda &fc
     pha
 
-    lda #CLOCK_IRQ
-    bit SHEILA+SYSTEM_VIA+VIA_IFR
+    lda #&40 ; TIMER1
+    bit SHEILA+USER_VIA+VIA_IFR
     beq irq_exit
+    sta SHEILA+USER_VIA+VIA_T1CH ; clear interrupt
 
 	txa
 	pha
 	tya
 	pha
 
-    ; Zero user VIA.
-
-    lda #&ff
-    sta SHEILA+USER_VIA+VIA_T1CH ; low byte copied from latch automatically
     jsr player_routine
-
-    sec
-    lda #0
-    sbc SHEILA+USER_VIA+VIA_T1CH
-    tay
-
-    lsr a
-    lsr a
-    lsr a
-    lsr a
-    tax
-    lda hex_table, x
-    sta &7c00
-    tya
-    and #&0f
-    tax
-    lda hex_table, x
-    sta &7c01
 
 	pla
 	tay

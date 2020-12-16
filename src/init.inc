@@ -52,16 +52,6 @@
     ldy #hi(load_cb)
     jsr OSFILE
 
-    ; We use timer 1 of the user VIA as a free-running timer, used to monitor
-    ; the speed of the interrupt-driven player. It's zeroed at the beginning of
-    ; an interrupt and read at the end.
-
-    lda #&60                     ; disable timer interrupts
-    sta SHEILA+USER_VIA+VIA_IER     
-    lda #&ff                     ; reset to &ffff on rollover
-    sta SHEILA+USER_VIA+VIA_T1LL
-    sta SHEILA+USER_VIA+VIA_T1LH
-
     ; Install the player interrupt handler (which will start playing immediately).
 
     sei
@@ -74,6 +64,21 @@
     lda #hi(player_irq_cb)
     sta IRQ1V+1
     cli
+
+    ; The playback interrupt runs at 1kHz, based on timer 1 of the user VIA.
+    ; This is decremented at 1MHz (but takes two cycles to load). An interrupt
+    ; is generated when it reaches zero.
+
+    TIMER_COUNT = 1000 - 2
+    lda #lo(TIMER_COUNT)
+    sta SHEILA+USER_VIA+VIA_T1LL
+    lda #hi(TIMER_COUNT)
+    sta SHEILA+USER_VIA+VIA_T1LH ; program reset latches
+    lda #&c0
+    sta SHEILA+USER_VIA+VIA_IER  ; enable TIMER1 interrupts
+    lda #&00
+    sta SHEILA+USER_VIA+VIA_ACR  ; continuous TIMER1 interrupts
+    sta SHEILA+USER_VIA+VIA_T1CH ; start timer
 
     ; Launch the program proper.
 
