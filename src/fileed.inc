@@ -236,7 +236,6 @@
 
     ; Wipe pattern data.
 
-print ~P%
     {
         lda #hi(PATTERN_DATA)
         sta w+1
