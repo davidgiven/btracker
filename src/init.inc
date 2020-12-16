@@ -4,16 +4,10 @@
 {
     ; Initialise the screen.
 
-    {
-        ldy #0
-        ldx #init_vdu_end - init_vdu
-    .loop
-        lda init_vdu, y
-        jsr OSWRCH
-        iny
-        dex
-        bne loop
-    }
+    lda #22
+    jsr OSWRCH
+    lda #7
+    jsr OSWRCH
 
     ; Wipe zero page.
 
@@ -28,29 +22,9 @@
 
     ; Various bits of system configuration.
 
-    lda #4          ; cursor keys
-    ldx #1          ; ...make characters
-    jsr OSBYTE
-
-    lda #225        ; function keys
-    ldx #160        ; ...make character codes
-    jsr OSBYTE
-
-    lda #229        ; ESCAPE key
-    ldx #1          ; ...makes character
-    ldy #0
-    jsr OSBYTE
-
     lda #16         ; ADC channels
     ldx #0          ; ...disabled
     jsr OSBYTE
-
-    ; Load the data file.
-
-    lda #&ff
-    ldx #lo(load_cb)
-    ldy #hi(load_cb)
-    jsr OSFILE
 
     ; Install the player interrupt handler (which will start playing immediately).
 
@@ -83,17 +57,6 @@
     ; Launch the program proper.
 
     jmp main
-
-.init_vdu
-    equb 22, 7 ; mode 7
-.init_vdu_end
-
-.filename
-    equs "data", 13
-.load_cb
-    equw filename
-    equd MUSIC_DATA
-    equd 0
 }
 
 ; vim: ts=4 sw=4 et ft=asm

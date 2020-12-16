@@ -57,7 +57,6 @@ TONE_SAMPLES = 64
 
 TONE_DATA = PATTERN_DATA - (TONE_SAMPLES*2*16)
 MUSIC_DATA = TONE_DATA - &100
-print ~MUSIC_DATA
 
 clear MUSIC_DATA, &7c00
 guard &7c00
@@ -69,12 +68,13 @@ org MUSIC_DATA
         equb &ff
     next
 
-.tempo         equb 12
-.patternlength equb &1f
-.samplespeed   equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-.pitchscale    equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-.repeatstart   equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.repeatend     equb 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.tempo          equb 12
+.patternlength  equb &1f
+.sequencelength equb 1
+.samplespeed    equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+.pitchscale     equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+.repeatstart    equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.repeatend      equb 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 ; Tone information. All zeros.
 
@@ -89,7 +89,7 @@ org TONE_DATA
     ; Pattern 0
 
 org PATTERN_DATA + 0*&100
-    equb OFF,   &0f, OFF,   &00, BLANK, 0, BLANK, 0
+    equb OFF,   &0f, OFF,   &0f, OFF, &0f, OFF, &0f
     equb BLANK, 0,   OFF,   &0e, BLANK, 0, BLANK, 0
     equb G_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
     equb G_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
@@ -121,8 +121,6 @@ org PATTERN_DATA + 0*&100
     equb F_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
     equb E_1,   &0f, AS_0,  &0e, BLANK, 0, BLANK, 0
     equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-
-save "data", MUSIC_DATA, P%
 
 ; vim: sw=4 ts=4 et ft=asm
 

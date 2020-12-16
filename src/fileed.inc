@@ -18,7 +18,85 @@
 .key_table
     key 162, pattern_editor
     key 163, tone_editor
+    key 'N', new_file
+    key 'L', load_file
+    key '*', star_command
     equb 0
+
+.new_file
+{
+    jsr draw_dialogue
+    lda #lo(data)
+    sta w+0
+    lda #hi(data)
+    sta w+1
+    jsr draw_packed
+    jsr are_you_sure
+    bcc ret
+    jsr clear_all_data
+.ret
+    jmp file_editor
+
+.data
+    equw &7c00 + 12*40 + 0
+    equb 128+1      ; cyan
+    equs "Discard current file and start again!"
+    equb 0
+}
+
+.load_file
+{
+}
+
+.star_command
+{
+    ldy #0
+.ploop
+    lda banner, y
+    jsr OSWRCH
+    iny
+    cpy #banner_end - banner
+    bne ploop
+
+    jsr set_cooked_keyboard
+
+.loop
+    lda #'*'
+    jsr OSWRCH
+    ldx #lo(oswordblock)
+    ldy #hi(oswordblock)
+    lda #0
+    jsr OSWORD
+    bcs escape_exit
+    ldx #lo(&400)
+    ldy #hi(&400)
+    jsr OSCLI
+    lda #&7e        ; this is all wrong
+    jsr OSBYTE
+    jmp loop
+
+.escape_exit
+    lda #&7e        ; acknowledge ESCAPE
+    jsr OSBYTE
+.ret
+    lda #22         ; the screen may have scrolled, so reset it
+    jsr OSWRCH
+    lda #7
+    jsr OSWRCH
+    jsr set_raw_keyboard
+    jmp file_editor
+
+.oswordblock
+    equw &400
+    equb 255
+    equb 32
+    equb 255
+
+.banner
+    equb 22, 7
+    equs "Press ESCAPE to return to the menu.", 10, 13, 10, 13
+.banner_end
+}
 
 .redraw
     {
@@ -94,6 +172,124 @@
 
         equb 0
     }
+}
+
+.clear_all_data
+{
+    lda #12
+    jsr OSWRCH
+
+    ; Wipe everything in the header area to zeroes (the pattern data is written
+    ; completely later).
+
+    {
+        lda #hi(MUSIC_DATA)
+        sta w+1
+        lda #0
+        sta w+0
+    .outerloop
+        ldy #0
+        tya
+    .innerloop
+        sta (w), y
+        iny
+        bne innerloop
+
+        inc w+1
+        lda w+1
+        cmp #hi(PATTERN_DATA)
+        bne outerloop
+    }
+
+    lda #32
+    sta tempo
+    lda #&1f
+    sta patternlength
+    lda #1
+    sta sequencelength
+
+    ; Initialise sequence.
+
+    {
+        ldx #1
+        lda #&ff
+    .loop
+        sta sequence, x
+        inx
+        cpx #128
+        bne loop
+    }
+
+    ; Initialise tone data.
+
+    {
+        ldx #15
+    .loop
+        lda #1
+        sta samplespeed, x
+        sta pitchscale, x
+        lda #64
+        sta repeatend, x
+        dex
+        bpl loop
+    }
+
+    ; Wipe pattern data.
+
+print ~P%
+    {
+        lda #hi(PATTERN_DATA)
+        sta w+1
+        ; w+0 is still 0 from above
+    .outerloop
+        ldy #0
+    .innerloop
+        lda #FIRST_COMMAND + 'B' - 'A'
+        sta (w), y
+        iny
+        iny
+        sta (w), y
+        iny
+        iny
+        sta (w), y
+        iny
+        iny
+        sta (w), y
+
+        tya
+        sec
+        sbc #5
+        tay
+
+        lda #&0f
+        sta (w), y
+        iny
+        iny
+        sta (w), y
+        iny
+        iny
+        sta (w), y
+        iny
+        iny
+        sta (w), y
+        iny
+        
+        bne innerloop
+
+        inc w+1
+        lda w+1
+        cmp #&7c
+        bne outerloop
+    }
+
+    ; Reset editor parameters.
+
+    lda #0
+    sta rowno
+    sta patternno
+    sta edittone
+    jsr reset_row_pointer
+    rts
 }
 
 ; vim: ts=4 sw=4 et ft=asm

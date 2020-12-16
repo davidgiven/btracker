@@ -204,6 +204,64 @@
     rts
 }
 
+; Draw a 'dialogue box' in the middle of the screen.
+
+.draw_dialogue
+{
+    lda #lo(data)
+    sta w+0
+    lda #hi(data)
+    sta w+1
+    jmp draw_packed
+
+.data
+    equw &7c00 + 10*40
+    equb 144+3      ; yellow
+    equb 20, &2c, 18, &2c, ' '
+    equb 20, ' ', 20, ' '
+    equb 20, ' ', 20, ' '
+    equb 20, ' ', 20, ' '
+    equb 20, ' ', 20, ' '
+    equb 20, ' ', 20, ' '
+    equb 144+3      ; yellow
+    equb 20, &2c, 18, &2c, ' '
+    equb 0
+}
+
+; Do the 'Are you sure?' thing. Returns C if yes, !C if no.
+
+.are_you_sure
+{
+    lda #lo(data)
+    sta w+0
+    lda #hi(data)
+    sta w+1
+    jsr draw_packed
+.loop
+    jsr OSRDCH
+    cmp #'Y'
+    beq yes
+    cmp #'N'
+    beq no
+    cmp #27
+    beq no
+    jmp loop
+
+.yes
+    sec
+    rts
+
+.no
+    clc
+    rts
+
+.data
+    equw &7c00 + 14*40 + 10
+    equb 128+6      ; red
+    equs "Are you sure? (Y/N)"
+    equb 0
+}
+
 ; Plots a point at X, Y on the teletext grid. Sets w to the address and leaves the pixel in A.
 ; Y is left 0 ready for dereferencing.
 

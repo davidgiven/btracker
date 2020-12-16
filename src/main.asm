@@ -2,6 +2,8 @@
 putbasic "src/modtest.bas", "modtest"
 putbasic "src/sattest.bas", "sattest"
 
+OSCLI   = &FFF7
+OSWORD  = &FFF1
 OSRDCH  = &FFE0
 OSWRCH  = &FFEE
 OSBYTE  = &FFF4
@@ -125,10 +127,9 @@ guard PATTERN_DATA
 ._start
     jmp _top
 .main
-    lda #0
-    sta rowno
-    jsr reset_row_pointer
-    jmp pattern_editor
+    jsr set_raw_keyboard
+    jsr clear_all_data
+    jmp file_editor
 
 include "src/utils.inc"
 include "src/patterned.inc"
@@ -136,6 +137,36 @@ include "src/toneed.inc"
 include "src/fileed.inc"
 include "src/screenutils.inc"
 include "src/player.inc"
+
+; Set the keyboard to 'raw' mode --- function keys and ESCAPE send characters.
+
+.set_raw_keyboard
+    lda #229        ; ESCAPE key
+    ldx #1          ; ...makes character
+    ldy #0
+    jsr OSBYTE
+
+    lda #4          ; cursor keys
+    ldx #1          ; ...make characters
+    jsr OSBYTE
+
+    lda #225        ; function keys
+    ldx #160        ; ...make character codes
+    jmp OSBYTE
+
+.set_cooked_keyboard
+    lda #229        ; ESCAPE key
+    ldx #0          ; ...is special
+    ldy #0
+    jsr OSBYTE
+
+    lda #4          ; cursor keys
+    ldx #0          ; ...are cursor keys
+    jsr OSBYTE
+
+    lda #225        ; function keys
+    ldx #0          ; ...are function keys
+    jmp OSBYTE
 
 ; --- Playback --------------------------------------------------------------
 
@@ -312,7 +343,7 @@ include "src/init.inc"
 ._end
 
 print "top=", ~_top, " data=", ~PATTERN_DATA
-save "btrack", _start, _end, _top
+save "!boot", _start, _end, _top
 
 include "src/testfile.inc"
 
