@@ -3,12 +3,17 @@
 .player_irq_cb
 {
     cld
-    lda &fc
-    pha
 
     lda #&40 ; TIMER1
     bit SHEILA+USER_VIA+VIA_IFR
-    beq irq_exit
+    bne user_via_interrupt
+
+    lda &fc
+    jmp (oldirqvector)
+
+    ; This is one of our interrupts.
+
+.user_via_interrupt
     lda #lo(TIMER_TICKS - 2)
     sta SHEILA+USER_VIA+VIA_T1CL ; clear interrupt
     lda #hi(TIMER_TICKS - 2)
@@ -25,10 +30,8 @@
 	tay
 	pla
 	tax
-
-.irq_exit
-    pla
-	jmp (oldirqvector)
+    lda &fc
+    rti
 }
 
 ; Actual player routine, called from the interrupt handler.
