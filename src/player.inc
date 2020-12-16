@@ -9,6 +9,9 @@
     lda #&40 ; TIMER1
     bit SHEILA+USER_VIA+VIA_IFR
     beq irq_exit
+    lda #lo(TIMER_TICKS - 2)
+    sta SHEILA+USER_VIA+VIA_T1CL ; clear interrupt
+    lda #hi(TIMER_TICKS - 2)
     sta SHEILA+USER_VIA+VIA_T1CH ; clear interrupt
 
 	txa

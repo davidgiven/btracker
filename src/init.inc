@@ -69,15 +69,15 @@
     ; This is decremented at 1MHz (but takes two cycles to load). An interrupt
     ; is generated when it reaches zero.
 
-    TIMER_COUNT = 1000 - 2
-    lda #lo(TIMER_COUNT)
+    lda #lo(TIMER_TICKS - 2)
     sta SHEILA+USER_VIA+VIA_T1LL
-    lda #hi(TIMER_COUNT)
+    lda #hi(TIMER_TICKS - 2)
     sta SHEILA+USER_VIA+VIA_T1LH ; program reset latches
     lda #&c0
     sta SHEILA+USER_VIA+VIA_IER  ; enable TIMER1 interrupts
-    lda #&00
+    lda #&40
     sta SHEILA+USER_VIA+VIA_ACR  ; continuous TIMER1 interrupts
+    lda #hi(TIMER_TICKS - 2)
     sta SHEILA+USER_VIA+VIA_T1CH ; start timer
 
     ; Launch the program proper.

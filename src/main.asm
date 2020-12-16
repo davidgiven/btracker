@@ -33,6 +33,9 @@ CLOCK_IRQ   = 1<<6
 NUM_PATTERNS = 64
 NUM_VOICES = 4
 
+TIMER_PERIOD = 10 ; ms
+TIMER_TICKS = 1e6 * (TIMER_PERIOD * 1e-3)
+
 ; One pattern is 256 bytes.
 NUM_STEPS = 32
 NOTE_LENGTH = 2 ; pitch, volume/tone; or: command, param
