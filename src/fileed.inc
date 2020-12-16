@@ -63,7 +63,9 @@
 .osfileblock
     equw BUFFER
     equd MUSIC_DATA
-    equb 0
+    equd 0
+    equd 0
+    equd 0
 
 .data
     equw &7c00 + 12*40 + 0
@@ -144,55 +146,6 @@
     jmp file_editor
 }
 
-.star_command
-{
-    ldy #0
-.ploop
-    lda banner, y
-    jsr OSWRCH
-    iny
-    cpy #banner_end - banner
-    bne ploop
-
-    jsr set_cooked_keyboard
-
-.loop
-    lda #'*'
-    jsr OSWRCH
-    ldx #lo(oswordblock)
-    ldy #hi(oswordblock)
-    lda #0
-    jsr OSWORD
-    bcs escape_exit
-    ldx #lo(BUFFER)
-    ldy #hi(BUFFER)
-    jsr OSCLI
-    lda #&7e        ; this is all wrong
-    jsr OSBYTE
-    jmp loop
-
-.escape_exit
-    lda #&7e        ; acknowledge ESCAPE
-    jsr OSBYTE
-.ret
-    lda #22         ; the screen may have scrolled, so reset it
-    jsr OSWRCH
-    lda #7
-    jsr OSWRCH
-    jsr set_raw_keyboard
-    jmp file_editor
-
-.banner
-    equb 22, 7
-    equs "Press ESCAPE to return to the menu.", 10, 13, 10, 13
-.banner_end
-}
-
-.oswordblock
-    equw BUFFER
-    equb 255
-    equb 32
-    equb 255
 
 .redraw
     {

@@ -5,11 +5,14 @@ putbasic "src/sattest.bas", "sattest"
 OSCLI   = &FFF7
 OSWORD  = &FFF1
 OSRDCH  = &FFE0
+OSASCI  = &FFE3
+OSNEWL  = &FFE7
 OSWRCH  = &FFEE
 OSBYTE  = &FFF4
 OSFILE  = &FFDD
 SHEILA  = &FE00
 
+BRKV    = &0202
 IRQ1V   = &0204
 
 VIA_T1CL    = 4
@@ -104,6 +107,10 @@ guard &9f
 .editnote               equb 0    ; the current test note
 .editchannel            equb 0    ; what channel we're playing the test note on
 
+; File editor (and misc) variables
+
+.textmode               equb 0    ; set if we're in 'text mode'
+
 print "Zero page usage:", ~P%, "out of 9f"
 
 mapchar '#', 95             ; mode 7 character set
@@ -166,6 +173,13 @@ guard MUSIC_DATA
     sta IRQ1V+1
     cli
 
+    ; Install the brk handler.
+
+    lda #lo(brk_cb)
+    sta BRKV+0
+    lda #hi(brk_cb)
+    sta BRKV+1
+
     ; The playback interrupt runs at 1kHz, based on timer 1 of the user VIA.
     ; This is decremented at 1MHz (but takes two cycles to load). An interrupt
     ; is generated when it reaches zero.
@@ -193,6 +207,8 @@ include "src/toneed.inc"
 include "src/fileed.inc"
 include "src/screenutils.inc"
 include "src/player.inc"
+
+; --- System handling -------------------------------------------------------
 
 ; Set the keyboard to 'raw' mode --- function keys and ESCAPE send characters.
 
@@ -223,6 +239,85 @@ include "src/player.inc"
     lda #225        ; function keys
     ldx #0          ; ...are function keys
     jmp OSBYTE
+
+.star_command
+{
+    jsr enter_text_mode
+.loop
+    lda #'*'
+    jsr OSWRCH
+    ldx #lo(oswordblock)
+    ldy #hi(oswordblock)
+    lda #0
+    jsr OSWORD
+    bcs escape_exit
+    ldx #lo(BUFFER)
+    ldy #hi(BUFFER)
+    jsr OSCLI
+    lda #&7e        ; this is all wrong
+    jsr OSBYTE
+    jmp loop
+
+.escape_exit
+    lda #&7e        ; acknowledge ESCAPE
+    jsr OSBYTE
+.ret
+    lda #22         ; the screen may have scrolled, so reset it
+    jsr OSWRCH
+    lda #7
+    jsr OSWRCH
+    jsr set_raw_keyboard
+    lda #0
+    sta textmode
+    jmp file_editor
+}
+
+.enter_text_mode
+{
+    bit textmode
+    bne ret
+    dec textmode
+
+    ldy #0
+.ploop
+    lda banner, y
+    jsr OSASCI
+    iny
+    cpy #banner_end - banner
+    bne ploop
+
+    jsr set_cooked_keyboard
+
+.ret
+    rts
+
+.banner
+    equb 22, 7
+    equs "Press ESCAPE to return to the menu.", 13, 13
+.banner_end
+}
+
+.brk_cb
+{
+    jsr enter_text_mode
+
+    ldy #1
+.loop
+    lda (&fd), y
+    beq exit
+    jsr OSWRCH
+    iny
+    jmp loop
+.exit
+    jsr OSNEWL
+    jmp star_command
+}
+
+.oswordblock
+    equw BUFFER
+    equb 255
+    equb 32
+    equb 255
 
 ; --- Playback --------------------------------------------------------------
 
