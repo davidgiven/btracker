@@ -108,13 +108,15 @@
     rts
 }
 
-; Display a packed banner at the top of the screen, with
-; the address in w. The packing is ludicrously simple: there's an initial
-; destination address, and then bytes are written, 01-31 repeat the next byte
-; that many times, 00 ends.
+; Display a packed banner at the top of the screen, with the address in YX. The
+; packing is ludicrously simple: there's an initial destination address, and
+; then bytes are written, 01-31 repeat the next byte that many times, 00 ends.
 
 .draw_packed
 {
+    stx w+0
+    sty w+1
+
 	ldy #0
     lda (w), y
     sta scrptr+0
@@ -161,10 +163,8 @@
 
 .draw_standard_header
 {
-    lda #lo(data)
-    sta w+0
-    lda #hi(data)
-    sta w+1
+    ldx #lo(data)
+    ldy #hi(data)
     jmp draw_packed
 
 .data
@@ -208,10 +208,8 @@
 
 .draw_dialogue
 {
-    lda #lo(data)
-    sta w+0
-    lda #hi(data)
-    sta w+1
+    ldx #lo(data)
+    ldy #hi(data)
     jmp draw_packed
 
 .data
@@ -232,10 +230,8 @@
 
 .are_you_sure
 {
-    lda #lo(data)
-    sta w+0
-    lda #hi(data)
-    sta w+1
+    ldx #lo(data)
+    ldy #hi(data)
     jsr draw_packed
 .loop
     jsr OSRDCH

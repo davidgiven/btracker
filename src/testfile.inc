@@ -53,11 +53,6 @@ B_3  = 3*36+33
 BLANK = FIRST_COMMAND + ('B' - 'A')
 OFF = FIRST_COMMAND + ('O' - 'A')
 
-TONE_SAMPLES = 64
-
-TONE_DATA = PATTERN_DATA - (TONE_SAMPLES*2*16)
-MUSIC_DATA = TONE_DATA - &100
-
 clear MUSIC_DATA, &7c00
 guard &7c00
 org MUSIC_DATA
@@ -70,6 +65,7 @@ org MUSIC_DATA
 
 .tempo          equb 12
 .patternlength  equb &1f
+.numpatterns    equb 0
 .sequencelength equb 1
 .samplespeed    equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 .pitchscale     equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1

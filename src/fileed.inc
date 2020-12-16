@@ -3,6 +3,7 @@
     ldx #0
     txs
     stx playing
+    jsr set_raw_keyboard
     jsr redraw
     jsr panic
 
@@ -20,16 +21,15 @@
     key 163, tone_editor
     key 'N', new_file
     key 'L', load_file
+    key 'S', save_file
     key '*', star_command
     equb 0
 
 .new_file
 {
     jsr draw_dialogue
-    lda #lo(data)
-    sta w+0
-    lda #hi(data)
-    sta w+1
+    ldx #lo(data)
+    ldy #hi(data)
     jsr draw_packed
     jsr are_you_sure
     bcc ret
@@ -46,6 +46,102 @@
 
 .load_file
 {
+    jsr draw_dialogue
+    ldx #lo(data)
+    ldy #hi(data)
+    jsr draw_packed
+    jsr read_filename
+
+    jsr clear_all_data
+    lda #&ff ; load
+    ldx #lo(osfileblock)
+    ldy #hi(osfileblock)
+    jsr OSFILE
+
+    jmp file_editor
+
+.osfileblock
+    equw BUFFER
+    equd MUSIC_DATA
+    equb 0
+
+.data
+    equw &7c00 + 12*40 + 0
+    equb 128+6      ; cyan
+    equs "Enter filename to load from:"
+    equb 0
+}
+
+.save_file
+{
+    jsr draw_dialogue
+    ldx #lo(data)
+    ldy #hi(data)
+    jsr draw_packed
+    jsr read_filename
+
+    lda #12
+    jsr OSWRCH
+    jsr cursor_on
+    lda numpatterns
+    clc
+    adc #hi(PATTERN_DATA)
+    sta endaddress+1
+    lda #0 ; save
+    ldx #lo(osfileblock)
+    ldy #hi(osfileblock)
+    jsr OSFILE
+
+    jmp file_editor
+
+.osfileblock
+    equw BUFFER
+    equd MUSIC_DATA
+    equd 0
+    equd MUSIC_DATA
+.endaddress
+    equd &7c00
+
+    jmp file_editor
+
+.data
+    equw &7c00 + 12*40 + 0
+    equb 128+6      ; cyan
+    equs "Enter filename to save to:"
+    equb 0
+}
+
+.read_filename
+{
+    ADDRESS = &7c00 + 14*40 + 1
+    jsr cursor_on
+
+    ldy #0
+.loop
+    lda data, y
+    jsr OSWRCH
+    iny
+    cpy #data_end - data
+    bne loop
+
+    jsr set_cooked_keyboard
+
+    ldx #lo(oswordblock)
+    ldy #hi(oswordblock)
+    lda #0
+    jsr OSWORD
+    bcs abort
+    rts
+
+.data
+    equb 31, 1, 14
+    equb '>', ' '
+.data_end
+
+.abort
+    lda #&7e        ; acknowledge any ESCAPE
+    jsr OSBYTE
+    jmp file_editor
 }
 
 .star_command
@@ -68,8 +164,8 @@
     lda #0
     jsr OSWORD
     bcs escape_exit
-    ldx #lo(&400)
-    ldy #hi(&400)
+    ldx #lo(BUFFER)
+    ldy #hi(BUFFER)
     jsr OSCLI
     lda #&7e        ; this is all wrong
     jsr OSBYTE
@@ -86,17 +182,17 @@
     jsr set_raw_keyboard
     jmp file_editor
 
-.oswordblock
-    equw &400
-    equb 255
-    equb 32
-    equb 255
-
 .banner
     equb 22, 7
     equs "Press ESCAPE to return to the menu.", 10, 13, 10, 13
 .banner_end
 }
+
+.oswordblock
+    equw BUFFER
+    equb 255
+    equb 32
+    equb 255
 
 .redraw
     {
@@ -106,13 +202,9 @@
         ldx #0
         ldy #8
         jsr draw_tab
-        lda #lo(data)
-        sta w+0
-        lda #hi(data)
-        sta w+1
-        ldx #80
-        jsr draw_packed
-        rts
+        ldx #lo(data)
+        ldy #hi(data)
+        jmp draw_packed
 
     .data
         equw &7c00 + 80
@@ -207,6 +299,7 @@
     sta patternlength
     lda #1
     sta sequencelength
+    sta numpatterns
 
     ; Initialise sequence.
 

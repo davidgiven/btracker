@@ -161,7 +161,10 @@
         lda patternno
         clc
         adc #1
-        and #NUM_PATTERNS-1
+        cmp #MAX_PATTERNS
+        bne t
+        lda #0
+    .t
         sta patternno
         jmp reset_row_pointer
     }
@@ -187,7 +190,9 @@
         lda patternno
         sec
         sbc #1
-        and #NUM_PATTERNS-1
+        bpl t
+        lda #MAX_PATTERNS-1
+    .t
         sta patternno
         jmp reset_row_pointer
     }
@@ -1016,12 +1021,9 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
     ldx #7
     ldy #18
     jsr draw_tab
-    lda #lo(data)
-    sta w+0
-    lda #hi(data)
-    sta w+1
-    jsr draw_packed
-    rts
+    ldx #lo(data)
+    ldy #hi(data)
+    jmp draw_packed
 
 .data
     equw &7c00 + 80

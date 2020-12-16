@@ -181,7 +181,7 @@ endmacro
     sta iw+0        ; low byte of sample data address
 
     tya
-    asl a
+    lsr a
     clc
     adc #hi(TONE_DATA)
     sta iw+1        ; high byte of sample data address

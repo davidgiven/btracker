@@ -32,18 +32,22 @@ VSYNC_IRQ   = 1<<1
 ADC_IRQ     = 1<<4
 CLOCK_IRQ   = 1<<6
 
-NUM_PATTERNS = 64
-NUM_VOICES = 4
-
 TIMER_PERIOD = 5 ; ms
 TIMER_TICKS = 1e6 * (TIMER_PERIOD * 1e-3)
+
+BUFFER      = &400 ; general purpose 256-byte buffer
 
 ; One pattern is 256 bytes.
 NUM_STEPS = 32
 NOTE_LENGTH = 2 ; pitch, volume/tone; or: command, param
+MAX_PATTERNS = 68
+NUM_VOICES = 4
+TONE_SAMPLES = 64
 
 ROW_LENGTH = NOTE_LENGTH * NUM_VOICES
-PATTERN_DATA = &7c00 - (NUM_PATTERNS * NUM_STEPS * ROW_LENGTH)
+PATTERN_DATA = &7c00 - (MAX_PATTERNS * NUM_STEPS * ROW_LENGTH)
+TONE_DATA = PATTERN_DATA - (TONE_SAMPLES*2*16)
+MUSIC_DATA = TONE_DATA - &100
 
 ; Notes
 
@@ -119,8 +123,8 @@ macro incw label
 .t
 endmacro
 
-org &1b00
-guard PATTERN_DATA
+org &1900
+guard MUSIC_DATA
 
 ; --- Main program ----------------------------------------------------------
 
@@ -390,7 +394,7 @@ include "src/player.inc"
 ._top
 
 print "top=", ~_top, " data=", ~MUSIC_DATA
-save "!boot", _start, _top
+save "btrack", _start, _top
 
 include "src/testfile.inc"
 

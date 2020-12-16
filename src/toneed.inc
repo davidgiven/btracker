@@ -256,7 +256,7 @@ EDIT_VOLUME = 6
         sta editsampledata+0 ; low byte of sample data address
 
         lda edittone
-        asl a
+        lsr a
         clc
         adc #hi(TONE_DATA)
         sta editsampledata+1 ; high byte of sample data address
@@ -534,13 +534,9 @@ EDIT_VOLUME = 6
         ldx #17
         ldy #25
         jsr draw_tab
-        lda #lo(data)
-        sta w+0
-        lda #hi(data)
-        sta w+1
-        ldx #80
-        jsr draw_packed
-        rts
+        ldx #lo(data)
+        ldy #hi(data)
+        jmp draw_packed
 
     .data
         equw &7c00 + 80
