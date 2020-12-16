@@ -852,17 +852,13 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
     jsr print_char
     jsr print_char
     jsr draw_note
-    lda #1
-    jsr advance_scrptr
+    jsr print_space
     jsr draw_note
-    lda #1
-    jsr advance_scrptr
+    jsr print_space
     jsr draw_note
-    lda #1
-    jsr advance_scrptr
+    jsr print_space
     jsr draw_drum
-    lda #1
-    jsr advance_scrptr
+    jsr print_space
     lda #156
     jsr print_char
     rts

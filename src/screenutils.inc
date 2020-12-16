@@ -16,6 +16,10 @@
     rts
 }
 
+.print_space
+    lda #' '
+    jmp print_char
+
 ; Hex lookup table.
 
 .hex_table
