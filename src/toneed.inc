@@ -156,7 +156,8 @@ EDIT_VOLUME = 6
 }
 
 .key_table
-    key 161, pattern_editor
+    key 161, file_editor
+    key 162, pattern_editor
     key 139, key_up
     key 138, key_down
     key 136, key_left
@@ -166,17 +167,6 @@ EDIT_VOLUME = 6
     key 32, play_note
     key 27, panic
     equb 0
-
-    .panic
-    {
-        lda #0
-        ldx #3
-    .loop
-        sta volume, x
-        dex
-        bpl loop
-        rts
-    }
 
     .play_note
     {

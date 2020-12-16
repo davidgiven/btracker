@@ -133,6 +133,7 @@ guard PATTERN_DATA
 include "src/utils.inc"
 include "src/patterned.inc"
 include "src/toneed.inc"
+include "src/fileed.inc"
 include "src/screenutils.inc"
 include "src/player.inc"
 
@@ -212,9 +213,18 @@ include "src/player.inc"
     rts
 }
 
-; Calls the subroutine whose pointer is in p.
-.jsr_w
-    jmp (w)
+; Stops playing ASAP.
+
+.panic
+{
+    lda #0
+    ldx #3
+.loop
+    sta volume, x
+    dex
+    bpl loop
+    rts
+}
 
 ; Note lookup table.
 ;

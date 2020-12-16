@@ -87,7 +87,8 @@
     rts
 
     .key_table
-        key 162, tone_editor
+        key 161, file_editor
+        key 163, tone_editor
         key 139, key_up
         key 138, key_down
         key 136, key_left
@@ -98,7 +99,7 @@
         key 60, tempo_down
         key 62, tempo_up
         key 32, playstop
-        key 27, panic
+        key 27, stopplaying
         key 'S'-'@', key_save_to_sequence
         key 'A'-'@', key_insert_into_sequence
         key 'D'-'@', key_delete_from_sequence
@@ -301,16 +302,11 @@
         rts
     }
 
-    .panic
+    .stopplaying
     {
         lda #0
         sta playing
-        ldx #3
-    .loop
-        sta volume, x
-        dex
-        bpl loop
-        rts
+        jmp panic
     }
 
     .key_save_to_sequence

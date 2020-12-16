@@ -178,7 +178,7 @@
     equs 128+4      ; blue
     equb 8, ' '
     equb 128+1
-    equs "f0-f3 "
+    equs "f1-f3 "
 
     equb 144+6      ; cyan graphics
     equb 30, &23
