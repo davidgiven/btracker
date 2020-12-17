@@ -167,6 +167,7 @@
         sbc #1
         and #&1f
         sta rowno
+        rts
 
     .ctrl
         lda patternno
@@ -190,6 +191,7 @@
         adc #1
         and #&1f
         sta rowno
+        rts
 
     .ctrl
         lda patternno

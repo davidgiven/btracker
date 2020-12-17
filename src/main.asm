@@ -132,7 +132,7 @@ macro incw label
 .t
 endmacro
 
-org &1900
+org &1300
 guard MUSIC_DATA
 
 ; --- Main program ----------------------------------------------------------
