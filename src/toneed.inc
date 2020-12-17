@@ -281,7 +281,7 @@ EDIT_VOLUME = 6
 
         lda #40-1
         jsr advance_scrptr
-        lda #1
+        lda pitchscale, x
         jsr print_h8
 
         lda #40-2
@@ -502,6 +502,10 @@ EDIT_VOLUME = 6
         jmp redraw
 
     .edit_scale
+        ldx edittone
+        clc
+        adc pitchscale, x
+        sta pitchscale, x
         jmp redraw
 
     .edit_samplerate

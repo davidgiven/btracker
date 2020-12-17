@@ -87,6 +87,8 @@ guard &9f
 .tickcount              equb 0          ; ticks left in the current note
 .ticks                  equb 0          ; global clock
 .iw                     equw 0          ; interrupt workspace
+.ip                     equb 0
+.iq                     equb 0
 
 ; Pattern editor variables
 

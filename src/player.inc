@@ -214,6 +214,28 @@ endmacro
         ldy samplecount, x
         clc
         lda (iw), y
+
+        ; Multiply by the pitch scale.
+
+        print ~P%
+        cmp #&80
+        ror a       ; prime carry bit for loop; arithmetic shift
+        sta ip
+        ldy #8
+    .mulloop
+        bcc noadd
+        clc
+        adc pitchscale, x
+    .noadd
+        ror a
+        ror ip
+        dey
+        bne mulloop
+
+        ; Modules adjust pitch.
+
+        lda ip
+        clc
         bpl positive
         adc #NUM_PITCHES
         clc
@@ -226,8 +248,8 @@ endmacro
     ; Compute volume.
 
     {
+        lda samplecount, x
         clc
-        tya
         adc #64
         tay
         clc
