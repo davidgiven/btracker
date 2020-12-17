@@ -310,7 +310,6 @@
     tax
     lda pixel_table, x
 
-    print ~P%
     ldy #0
     rts
 }

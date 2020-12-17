@@ -402,7 +402,6 @@
         jmp press_any_key
 
     .insert
-        print ~P%
         stx patternno
         inx
         stx numpatterns

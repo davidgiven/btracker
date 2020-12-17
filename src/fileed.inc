@@ -53,9 +53,17 @@
     jsr read_filename
 
     jsr clear_all_data
+
+    ldx #osfileblock_end - osfileblock
+.loop
+    lda osfileblock, x
+    sta BUFFER1, x
+    dex
+    bne loop
+
     lda #&ff ; load
-    ldx #lo(osfileblock)
-    ldy #hi(osfileblock)
+    ldx #lo(BUFFER1)
+    ldy #hi(BUFFER1)
     jsr OSFILE
 
     jmp file_editor
@@ -66,6 +74,7 @@
     equd 0
     equd 0
     equd 0
+.osfileblock_end
 
 .data
     equw &7c00 + 12*40 + 0
@@ -85,13 +94,21 @@
     lda #12
     jsr OSWRCH
     jsr cursor_on
+
+    ldx #osfileblock_end - osfileblock
+.loop
+    lda osfileblock, x
+    sta BUFFER1, x
+    dex
+    bne loop
+
     lda numpatterns
     clc
     adc #hi(PATTERN_DATA)
-    sta endaddress+1
+    sta endaddress-osfileblock+BUFFER1+1
     lda #0 ; save
-    ldx #lo(osfileblock)
-    ldy #hi(osfileblock)
+    ldx #lo(BUFFER1)
+    ldy #hi(BUFFER1)
     jsr OSFILE
 
     jmp file_editor
@@ -103,8 +120,7 @@
     equd MUSIC_DATA
 .endaddress
     equd &7c00
-
-    jmp file_editor
+.osfileblock_end
 
 .data
     equw &7c00 + 12*40 + 0

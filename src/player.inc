@@ -77,7 +77,6 @@
 
         tay
         lda cvolume, x   ; check to see if this note is silent
-        print ~P%
         beq alternate_tuning ; if so, use the other set of commands
 
         lda iw

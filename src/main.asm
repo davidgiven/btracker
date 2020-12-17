@@ -39,6 +39,7 @@ TIMER_PERIOD = 5 ; ms
 TIMER_TICKS = 1e6 * (TIMER_PERIOD * 1e-3)
 
 BUFFER      = &400 ; general purpose 256-byte buffer
+BUFFER1     = &500 ; and another one
 
 ; One pattern is 256 bytes.
 SEQUENCE_LENGTH = 128
