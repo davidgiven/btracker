@@ -98,6 +98,7 @@ guard &9f
 .scrptr                 equw 0    ; screen pointer
 .cursorx                equb 0    ; position of cursor (0-15)
 .playing                equb 0    ; are we playing or not?
+.looping                equb 0    ; are we looping the current pattern or not?
 
 ; Tone editor variables
 

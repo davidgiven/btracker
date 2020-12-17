@@ -32,6 +32,22 @@
     inx
     cpx patternlength
     blt nowrap
+
+    bit looping
+    bne no_advance
+    ldy seqindex
+    iny
+    cpy #SEQUENCE_LENGTH
+    beq back_to_start
+    lda sequence, y
+    bpl reload_pattern
+.back_to_start
+    ldy #0
+    lda sequence, y
+.reload_pattern
+    sty seqindex
+    sta patternno
+.no_advance
     ldx #0
 .nowrap
     stx rowno
@@ -103,6 +119,7 @@
         key 'A'-'@', key_insert_into_sequence
         key 'D'-'@', key_delete_from_sequence
         key 'N'-'@', key_new_pattern
+        key 'L'-'@', key_loop
         equb 0
 
     .number_key
@@ -412,6 +429,14 @@
         equb 128+1      ; read
         equs "No room!"
         equb 0
+    }
+
+    .key_loop
+    {
+        lda looping
+        eor #&ff
+        sta looping
+        rts
     }
 
     .detect_shift
@@ -811,6 +836,19 @@ PATTERNLENGTH_ADDRESS = &7c00 + 6*40 + 17
     lda patternlength
     jsr print_h8
 
+    {
+        bit looping
+        beq looping_off
+        ldx #lo(looping_on_msg)
+        ldy #hi(looping_on_msg)
+        jmp go
+    .looping_off
+        ldx #lo(looping_off_msg)
+        ldy #hi(looping_off_msg)
+    .go
+        jsr draw_packed
+    }
+
     lda #lo(MIDDLE_ROW_ADDRESS)
     sta scrptr+0
     lda #hi(MIDDLE_ROW_ADDRESS)
@@ -883,6 +921,18 @@ PATTERNLENGTH_ADDRESS = &7c00 + 6*40 + 17
     jsr move_cursor
 
     rts
+
+.looping_on_msg
+    equw &7c00 + 5*40 + 31
+    equb 128+7      ; white
+    equs "Looping"
+    equb 0
+
+.looping_off_msg
+    equw &7c00 + 5*40 + 31
+    equb 128+7      ; white
+    equs "Playing"
+    equb 0
 }
 
 .draw_row
