@@ -248,7 +248,6 @@
 
     lda #32
     sta tempo
-    lda #&1f
     sta patternlength
     lda #1
     sta sequencelength

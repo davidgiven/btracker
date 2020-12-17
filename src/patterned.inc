@@ -28,16 +28,13 @@
     lda playing
     beq main_loop
 
-    lda rowptr+0
-    clc
-    adc #ROW_LENGTH
-    sta rowptr+0
-    
-    lda rowno
-    clc
-    adc #1
-    and #&1f
-    sta rowno
+    ldx rowno
+    inx
+    cpx patternlength
+    blt nowrap
+    ldx #0
+.nowrap
+    stx rowno
 
     jmp current_note_has_changed
 
@@ -94,12 +91,14 @@
         key 136, key_left
         key 137, key_right
         key 9, key_tab
-        key 43, key_increment
-        key 45, key_decrement
-        key 60, tempo_down
-        key 62, tempo_up
-        key 32, playstop
-        key 27, stopplaying
+        key '-', key_increment
+        key '+', key_decrement
+        key '<', key_tempo_down
+        key '>', key_tempo_up
+        key ',', key_pattern_shorter
+        key '.', key_pattern_longer
+        key 32, key_pause
+        key 27, key_stop
         key 'S'-'@', key_save_to_sequence
         key 'A'-'@', key_insert_into_sequence
         key 'D'-'@', key_delete_from_sequence
@@ -152,12 +151,6 @@
         and #&1f
         sta rowno
 
-        sec
-        lda rowptr+0
-        sbc #ROW_LENGTH
-        sta rowptr+0
-        rts
-
     .ctrl
         lda patternno
         clc
@@ -180,12 +173,6 @@
         adc #1
         and #&1f
         sta rowno
-
-        clc
-        lda rowptr+0
-        adc #ROW_LENGTH
-        sta rowptr+0
-        rts
 
     .ctrl
         lda patternno
@@ -284,7 +271,7 @@
         jmp adjust_value
     }
 
-    .tempo_down
+    .key_tempo_down
     {
         dec tempo
         bne ret
@@ -293,7 +280,7 @@
         rts
     }
 
-    .tempo_up
+    .key_tempo_up
     {
         inc tempo
         bne ret
@@ -302,7 +289,27 @@
         rts
     }
 
-    .playstop
+    .key_pattern_shorter
+    {
+        dec patternlength
+        bne ret
+        inc patternlength
+    .ret
+        rts
+    }
+
+    .key_pattern_longer
+    {
+        ldx patternlength
+        cpx #&20
+        beq ret
+        inx
+        stx patternlength
+    .ret
+        rts
+    }
+
+    .key_pause
     {
         lda playing
         eor #&ff
@@ -310,7 +317,7 @@
         rts
     }
 
-    .stopplaying
+    .key_stop
     {
         lda #0
         sta playing
@@ -775,6 +782,8 @@ SEQUENCE_ADDRESS = &7c00 + 2*40 + 1
 
 LINE_PADDING = 0
 PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
+TEMPO_ADDRESS = &7c00 + 5*40 + 17
+PATTERNLENGTH_ADDRESS = &7c00 + 6*40 + 17
 .draw_screen
 {
     lda #lo(PATTERN_NUMBER_ADDRESS)
@@ -786,6 +795,20 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
     lda #lo(PATTERN_NUMBER_ADDRESS + 40)
     sta scrptr+0
     lda patternno
+    jsr print_h8
+
+    lda #lo(TEMPO_ADDRESS)
+    sta scrptr+0
+    lda #hi(TEMPO_ADDRESS)
+    sta scrptr+1
+    lda tempo
+    jsr print_h8
+
+    lda #lo(PATTERNLENGTH_ADDRESS)
+    sta scrptr+0
+    lda #hi(PATTERNLENGTH_ADDRESS)
+    sta scrptr+1
+    lda patternlength
     jsr print_h8
 
     lda #lo(MIDDLE_ROW_ADDRESS)
@@ -1099,12 +1122,12 @@ PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
     equb 128+6      ; cyan
     equs "Current tempo:"
     equb 128+7      ; white
-    equb 24, 's'
+    equb 24, ' '
 
     equb 128+6      ; cyan
     equs "Pattern length:"
     equb 128+7      ; white
-    equb 23, 't'
+    equb 23, ' '
 
     equb 144+6      ; cyan
     equb 6, &2c

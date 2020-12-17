@@ -322,7 +322,7 @@ include "src/player.inc"
 
 ; --- Playback --------------------------------------------------------------
 
-; Cue up a new pattern.
+; Compute rowptr based on patternno and rowno.
 
 .reset_row_pointer
 {
@@ -348,6 +348,7 @@ include "src/player.inc"
     jmp next
 
 .*play_current_note
+    jsr reset_row_pointer
     ldx #3              ; channel
     sei                 ; atomic wrt the interrupt-driven player
 
