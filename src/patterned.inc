@@ -116,8 +116,9 @@
         key 32, key_pause
         key 27, key_stop
         key 'S'-'@', key_save_to_sequence
-        key 'A'-'@', key_insert_into_sequence
-        key 'D'-'@', key_delete_from_sequence
+        key 'A'-'@', key_insert_after_into_sequence
+        key 'W'-'@', key_insert_before_into_sequence
+        key 'Q'-'@', key_delete_from_sequence
         key 'N'-'@', key_new_pattern
         key 'L'-'@', key_loop
         equb 0
@@ -360,7 +361,7 @@
         jmp draw_sequence
     }
 
-    .key_insert_into_sequence
+    .key_insert_before_into_sequence
     {
         ldx #127
     .loop
@@ -369,6 +370,31 @@
         dex
         cpx seqindex
         bne loop
+
+        ldx seqindex
+        lda patternno
+        sta sequence, x
+        jmp draw_sequence
+    }
+
+    .key_insert_after_into_sequence
+    {
+        ldx #127
+    .loop
+        lda sequence-1, x
+        sta sequence, x
+        dex
+        cpx seqindex
+        bne loop
+
+        ldx seqindex
+        inx
+        cpx #128
+        beq ret
+        stx seqindex
+        lda patternno
+        sta sequence, x
+    .ret
         jmp draw_sequence
     }
 
@@ -414,21 +440,6 @@
         stx patternno
         inx
         stx numpatterns
-
-        ; Attempt to append this pattern to the end of the sequence.
-
-        ldy seqindex
-    .loop
-        lda sequence, y
-        bmi end_of_sequence
-        iny
-        cpy #SEQUENCE_LENGTH
-        bne loop
-
-    .end_of_sequence
-        sty seqindex
-        lda patternno
-        sta sequence, y
 
     .exit
         jsr reset_row_pointer
