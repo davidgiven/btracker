@@ -58,16 +58,39 @@
 
         lda cpitch, x    ; get pitch byte
         cmp rpitch, x    ; chip already set for this pitch?
-        beq do_volume    ; yes, skip write and go straight for volume
+        bne do_pitch     ; no, write it
+        lda cvolume, x
+        cmp rvolume, x
+        beq next         ; volumes are the same too, do nothing
+        clc
+        lda cvolume, x
+        beq do_pitch     ; volume changing to zero, update pitch
+        lda rvolume, x
+        beq do_pitch     ; volume changing from zero, update pitch
+        jmp do_volume    ; otherwise, update the volume but not the pitch
+
+    .do_pitch
+        lda cpitch, x
         sta rpitch, x    ; update current value
         cpx #3           ; drum track is special
         beq drum
 
         tay
+        lda cvolume, x   ; check to see if this note is silent
+        print ~P%
+        beq alternate_tuning ; if so, use the other set of commands
+
         lda iw
         ora pitch_cmd_table_1, y 
         jsr poke_sound_chip
         lda pitch_cmd_table_2, y
+        jmp poke
+
+    .alternate_tuning
+        lda iw
+        ora drum_pitch_cmd_table_1, y
+        jsr poke_sound_chip
+        lda drum_pitch_cmd_table_2, y
     .poke
         jsr poke_sound_chip
 

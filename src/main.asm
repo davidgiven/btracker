@@ -472,6 +472,26 @@ include "src/player.inc"
     next
 }
 
+; And now, the *other* table: the BBC's sound chip uses a 15-bit divider for
+; the noise channels, so if you're using any of the c2 tones, you need
+; different pitch values in channel 2 for the noise to be in tune.
+
+.drum_pitch_cmd_table_1 org P% + NUM_PITCHES
+.drum_pitch_cmd_table_2 org P% + NUM_PITCHES
+{
+    for i, 0, NUM_PITCHES-1
+        midi = i/3 + 48
+        freq = 440 * 2^((midi-69)/12)
+        pitch10 = 4000000 / (30 * freq)
+        command1 = (pitch10 and &0f) or &80
+        command2 = pitch10 >> 4
+        org drum_pitch_cmd_table_1 + i
+        equb command1
+        org drum_pitch_cmd_table_2 + i
+        equb command2
+    next
+}
+
 ; For every note, this table contains a BCD-encoded representation of octave
 ; (top nibble) and note (bottom nibble), where the nibble 0 is a C. If the
 ; note is not representable (i.e. not a whole note), the result is &ff.
