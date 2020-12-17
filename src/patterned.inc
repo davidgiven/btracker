@@ -124,9 +124,18 @@
 
     .number_key
     {
+        ora #&10
         sec
         sbc #'0'
+        pha
+        jsr detect_ctrl
+        beq ctrl
+        pla
         jmp set_value
+
+    .ctrl
+        pla
+        jmp key_mute
     }
 
     .letter_key
@@ -437,6 +446,19 @@
         lda looping
         eor #&ff
         sta looping
+        rts
+    }
+
+    .key_mute
+    {
+        tax
+        dex
+        cpx #4
+        bge ret
+        lda mute, x
+        eor #&ff
+        sta mute, x
+    .ret
         rts
     }
 
@@ -810,6 +832,7 @@ LINE_PADDING = 0
 PATTERN_NUMBER_ADDRESS = &7c00 + 3*40 + 19
 TEMPO_ADDRESS = &7c00 + 5*40 + 17
 PATTERNLENGTH_ADDRESS = &7c00 + 6*40 + 17
+MUTE_ADDRESS = &7c00 + 7*40 + 7
 .draw_screen
 {
     lda #lo(PATTERN_NUMBER_ADDRESS)
@@ -848,6 +871,22 @@ PATTERNLENGTH_ADDRESS = &7c00 + 6*40 + 17
         ldy #hi(looping_off_msg)
     .go
         jsr draw_packed
+    }
+
+    {
+        ldx #3
+        ldy #24
+    .loop
+        lda #128+6
+        clc
+        adc mute, x         ; -1 for yes, 0 for no
+        sta MUTE_ADDRESS, y
+        tya
+        sec
+        sbc #8
+        tay
+        dex
+        bpl loop
     }
 
     lda #lo(MIDDLE_ROW_ADDRESS)
@@ -1183,15 +1222,15 @@ PATTERNLENGTH_ADDRESS = &7c00 + 6*40 + 17
     equb 144+6      ; cyan
     equb 6, &2c
     equb 128+6      ; cyan
-    equs "CH 0"
-    equb 144+6
-    equb &2c, &2c
-    equb 128+6      ; cyan
     equs "CH 1"
     equb 144+6
     equb &2c, &2c
     equb 128+6      ; cyan
     equs "CH 2"
+    equb 144+6
+    equb &2c, &2c
+    equb 128+6      ; cyan
+    equs "CH 3"
     equb 144+6
     equb &2c, &2c
     equb 128+6      ; cyan

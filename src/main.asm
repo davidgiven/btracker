@@ -100,6 +100,7 @@ guard &9f
 .cursorx                equb 0    ; position of cursor (0-15)
 .playing                equb 0    ; are we playing or not?
 .looping                equb 0    ; are we looping the current pattern or not?
+.mute                   equb 0, 0, 0, 0 ; whether this channel is muted
 
 ; Tone editor variables
 
@@ -388,6 +389,12 @@ include "src/player.inc"
     sta tone, x         ; compute tone
 
 .next
+    lda mute, x
+    beq not_mute
+    lda #0
+    sta volume, x
+.not_mute
+
     dex
     bmi exit
     jmp loop

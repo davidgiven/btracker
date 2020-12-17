@@ -24,6 +24,7 @@ EDIT_VOLUME = 6
     ldx #0
     txs
     stx playing
+    stx mute+0
     jsr select_tone
     jsr redraw
     jsr panic
