@@ -107,8 +107,8 @@
         key 136, key_left
         key 137, key_right
         key 9, key_tab
-        key '-', key_increment
-        key '+', key_decrement
+        key '+', key_increment
+        key '-', key_decrement
         key '<', key_tempo_down
         key '>', key_tempo_up
         key ',', key_pattern_shorter
