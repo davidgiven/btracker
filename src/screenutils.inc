@@ -253,8 +253,25 @@
 
 .data
     equw &7c00 + 14*40 + 10
-    equb 128+6      ; red
+    equb 128+6      ; cyan
     equs "Are you sure? (Y/N)"
+    equb 0
+}
+
+; Do the 'Press any key to continue' thing.
+
+.press_any_key
+{
+    ldx #lo(data)
+    ldy #hi(data)
+    jsr draw_packed
+    jsr cursor_off
+    jmp OSRDCH
+
+.data
+    equw &7c00 + 14*40 + 6
+    equb 128+6      ; cyan
+    equs "Press any key to continue"
     equb 0
 }
 

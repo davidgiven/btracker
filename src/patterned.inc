@@ -103,6 +103,7 @@
         key 'S'-'@', key_save_to_sequence
         key 'A'-'@', key_insert_into_sequence
         key 'D'-'@', key_delete_from_sequence
+        key 'N'-'@', key_new_pattern
         equb 0
 
     .number_key
@@ -161,7 +162,7 @@
         lda patternno
         clc
         adc #1
-        cmp #MAX_PATTERNS
+        cmp numpatterns
         bne t
         lda #0
     .t
@@ -191,7 +192,9 @@
         sec
         sbc #1
         bpl t
-        lda #MAX_PATTERNS-1
+        ldx numpatterns
+        dex
+        txa
     .t
         sta patternno
         jmp reset_row_pointer
@@ -358,6 +361,50 @@
         sta patternno
         jsr reset_row_pointer
         jmp draw_sequence
+    }
+
+    .key_new_pattern
+    {
+        ldx numpatterns
+        cpx #MAX_PATTERNS
+        bne insert
+    .noroom
+        jsr draw_dialogue
+        ldx #lo(toomany)
+        ldy #hi(toomany)
+        jsr draw_packed
+        jmp press_any_key
+
+    .insert
+        print ~P%
+        stx patternno
+        inx
+        stx numpatterns
+
+        ; Attempt to append this pattern to the end of the sequence.
+
+        ldy seqindex
+    .loop
+        lda sequence, y
+        bmi end_of_sequence
+        iny
+        cpy #SEQUENCE_LENGTH
+        bne loop
+
+    .end_of_sequence
+        sty seqindex
+        lda patternno
+        sta sequence, y
+
+    .exit
+        jsr reset_row_pointer
+        jmp draw_sequence
+
+    .toomany
+        equw &7c00 + 12*40 + 15
+        equb 128+1      ; read
+        equs "No room!"
+        equb 0
     }
 
     .detect_shift

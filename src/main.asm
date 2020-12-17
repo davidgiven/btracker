@@ -41,6 +41,7 @@ TIMER_TICKS = 1e6 * (TIMER_PERIOD * 1e-3)
 BUFFER      = &400 ; general purpose 256-byte buffer
 
 ; One pattern is 256 bytes.
+SEQUENCE_LENGTH = 128
 NUM_STEPS = 32
 NOTE_LENGTH = 2 ; pitch, volume/tone; or: command, param
 MAX_PATTERNS = 68
