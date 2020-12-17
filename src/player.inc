@@ -235,6 +235,8 @@ endmacro
 
         lda ip
         clc
+        adc dpitch, x
+        clc
         bpl positive
         adc #NUM_PITCHES
         clc

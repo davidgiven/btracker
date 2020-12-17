@@ -719,13 +719,20 @@
     and #&fe
     tay
 
-    lda (rowptr), y     ; if not a note, pick one at random
+    lda (rowptr), y     ; if not a note, 
     cmp #FIRST_COMMAND
     blt is_a_note
-    lda #C_1
-    sta (rowptr), y
-.is_a_note
+    lda cursorx
+    and #&03
+    cmp #2
+    beq tone
+    cmp #3
+    beq volume
 
+    lda #C_1            ; convert this to a note
+    sta (rowptr), y
+
+.is_a_note
     lda cursorx
     cmp #12
     beq drum

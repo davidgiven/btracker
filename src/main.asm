@@ -69,6 +69,7 @@ org &00
 guard &9f
 
 .pitch        equb 0, 0, 0, 0  ; master copy for note
+.dpitch       equb 0, 0, 0, 0  ; pitch delta (based on aftereffects)
 .volume       equb 0, 0, 0, 0
 .w            equw 0
 .q            equb 0
@@ -352,6 +353,12 @@ include "src/player.inc"
     sta volume, x
     jmp next
 
+.pitchbend_command
+    ; Set dpitch to the parameter byte.
+    lda (rowptr), y
+    sta dpitch, x
+    jmp next
+
 .*play_current_note
     jsr reset_row_pointer
     ldx #3              ; channel
@@ -367,11 +374,15 @@ include "src/player.inc"
     blt is_note
     cmp #FIRST_COMMAND + ('O' - 'A')
     beq off_command
+    cmp #FIRST_COMMAND + ('P' - 'A')
+    beq pitchbend_command
 .done
     jmp next
 
 .is_note
     sta pitch, x        ; set master pitch
+    lda #0
+    sta dpitch, x       ; reset pitch delta
 
     lda (rowptr), y
     tay
