@@ -50,7 +50,8 @@
     ldx #lo(data)
     ldy #hi(data)
     jsr draw_packed
-    jsr read_filename
+    jsr read_string
+    bcs abort
 
     jsr clear_all_data
 
@@ -66,6 +67,7 @@
     ldy #hi(BUFFER1)
     jsr OSFILE
 
+.abort
     jmp file_editor
 
 .osfileblock
@@ -89,7 +91,8 @@
     ldx #lo(data)
     ldy #hi(data)
     jsr draw_packed
-    jsr read_filename
+    jsr read_string
+    bcs abort
 
     lda #12
     jsr OSWRCH
@@ -111,6 +114,7 @@
     ldy #hi(BUFFER1)
     jsr OSFILE
 
+.abort
     jmp file_editor
 
 .osfileblock
@@ -128,40 +132,6 @@
     equs "Enter filename to save to:"
     equb 0
 }
-
-.read_filename
-{
-    ADDRESS = &7c00 + 14*40 + 1
-    jsr cursor_on
-
-    ldy #0
-.loop
-    lda data, y
-    jsr OSWRCH
-    iny
-    cpy #data_end - data
-    bne loop
-
-    jsr set_cooked_keyboard
-
-    ldx #lo(oswordblock)
-    ldy #hi(oswordblock)
-    lda #0
-    jsr OSWORD
-    bcs abort
-    rts
-
-.data
-    equb 31, 1, 14
-    equb '>', ' '
-.data_end
-
-.abort
-    lda #&7e        ; acknowledge any ESCAPE
-    jsr OSBYTE
-    jmp file_editor
-}
-
 
 .redraw
     {
@@ -347,6 +317,7 @@
     lda #0
     sta rowno
     sta patternno
+    sta seqindex
     sta edittone
     jsr reset_row_pointer
     rts

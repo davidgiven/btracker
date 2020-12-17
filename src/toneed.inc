@@ -163,8 +163,9 @@ EDIT_VOLUME = 6
     key 138, key_down
     key 136, key_left
     key 137, key_right
-    key 43, key_increment
-    key 45, key_decrement
+    key '+', key_increment
+    key '-', key_decrement
+    key 'D'-'@', key_duplicate_tone
     key 32, play_note
     key 27, panic
     equb 0
@@ -241,10 +242,84 @@ EDIT_VOLUME = 6
         lda #1
         jmp adjust_value
     }
+
     .key_decrement
     {
         lda #lo(-1)
         jmp adjust_value
+    }
+
+    .key_duplicate_tone
+    {
+        jsr draw_dialogue
+        ldx #lo(message_data)
+        ldy #hi(message_data)
+        jsr draw_packed
+        jsr read_number
+        bcs ret
+
+        cmp #&10
+        bge out_of_range
+
+        sta p                   ; destination tone
+        asl a
+        rol a
+        sta w+0                 ; low byte of destination sample data address
+
+        lda p
+        lsr a
+        clc
+        adc #hi(TONE_DATA)
+        sta w+1                 ; high byte of sample data address
+
+        ; Copy the sample data
+
+        ldy #64*2-1
+    .loop
+        lda (editsampledata), y
+        sta (w), y
+        dey
+        bpl loop
+
+        ; Copy the tone parameters
+
+        ldx edittone
+        ldy p
+        lda samplespeed, x
+        sta samplespeed, y
+        lda pitchscale, x
+        sta pitchscale, y
+        lda repeatstart, x
+        sta repeatstart, y
+        lda repeatend, x
+        sta repeatend, y
+
+        ; Switch to the new tone.
+
+        sty edittone
+        jsr select_tone
+        jmp redraw
+        
+    .out_of_range
+        jsr draw_dialogue
+        ldx #lo(out_of_range_data)
+        ldy #hi(out_of_range_data)
+        jsr draw_packed
+        jsr press_any_key
+    .ret
+        rts
+
+    .message_data
+        equw &7c00 + 12*40 + 0
+        equb 128+6      ; cyan
+        equs "Enter tone number to copy to:"
+        equb 0
+
+    .out_of_range_data
+        equw &7c00 + 12*40 + 6
+        equb 128+1      ; red
+        equs "Tone number out of range!"
+        equb 0
     }
 
     .select_tone

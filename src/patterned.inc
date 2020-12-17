@@ -121,6 +121,7 @@
         key 'Q'-'@', key_delete_from_sequence
         key 'N'-'@', key_new_pattern
         key 'L'-'@', key_loop
+        key 'D'-'@', key_duplicate_pattern
         equb 0
 
     .number_key
@@ -471,6 +472,59 @@
         sta mute, x
     .ret
         rts
+    }
+
+    .key_duplicate_pattern
+    {
+        jsr draw_dialogue
+        ldx #lo(message_data)
+        ldy #hi(message_data)
+        jsr draw_packed
+        jsr read_number
+        bcs ret
+
+        cmp numpatterns
+        bge out_of_range
+
+        sta p                   ; destination pattern
+        clc
+        adc #hi(PATTERN_DATA)
+        sta w+1
+        lda #0
+        sta w+0                 ; w contains destination address
+        sta rowptr+0            ; rowptr is source
+
+        ldy #0
+    .loop
+        lda (rowptr), y
+        sta (w), y
+        iny
+        bne loop
+
+        lda p
+        sta patternno
+        rts
+        
+    .out_of_range
+        jsr draw_dialogue
+        ldx #lo(out_of_range_data)
+        ldy #hi(out_of_range_data)
+        jsr draw_packed
+        jsr press_any_key
+    .ret
+        rts
+
+    .message_data
+        equw &7c00 + 12*40 + 0
+        equb 128+6      ; cyan
+        equs "Enter pattern number to copy to:"
+        equb 0
+
+    .out_of_range_data
+        equw &7c00 + 12*40 + 5
+        equb 128+1      ; red
+        equs "Pattern number out of range!"
+        equb 0
     }
 
     .detect_shift

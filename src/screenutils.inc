@@ -275,6 +275,90 @@
     equb 0
 }
 
+.read_string
+{
+    ADDRESS = &7c00 + 14*40 + 1
+    jsr cursor_on
+
+    ldy #0
+.loop
+    lda data, y
+    jsr OSWRCH
+    iny
+    cpy #data_end - data
+    bne loop
+
+    jsr set_cooked_keyboard
+
+    ldx #lo(oswordblock)
+    ldy #hi(oswordblock)
+    lda #0
+    jsr OSWORD
+    bcs abort
+    jsr cursor_off
+    jsr set_raw_keyboard
+    clc
+    rts
+
+.data
+    equb 31, 1, 14
+    equb '>', ' '
+.data_end
+
+.abort
+    lda #&7e        ; acknowledge any ESCAPE
+    jsr OSBYTE
+    jsr cursor_off
+    jsr set_raw_keyboard
+    sec
+    rts
+}
+
+.read_number
+{
+    jsr read_string
+    bcs abort
+
+    lda BUFFER+0
+    jsr parse_digit
+    bcs bad
+    ldx BUFFER+1
+    cpx #13
+    beq good            ; one digit followed by return
+    ldx BUFFER+2
+    cpx #13
+    bne bad             ; more than two characters
+    asl a
+    asl a
+    asl a
+    asl a               ; shift first digit left
+    sta p
+    lda BUFFER+1
+    jsr parse_digit     ; parse second digit
+    bcs bad
+    ora p
+.good
+    clc
+    rts
+
+.bad
+    jsr draw_dialogue
+    ldx #lo(data)
+    ldy #hi(data)
+    jsr draw_packed
+    jsr press_any_key
+.abort
+    sec
+.ret
+    rts
+
+.data
+    equw &7c00 + 12*40 + 11
+    equb 128+1      ; red
+    equs "Invalid number!"
+    equb 0
+}
+
 ; Plots a point at X, Y on the teletext grid. Sets w to the address and leaves the pixel in A.
 ; Y is left 0 ready for dereferencing.
 

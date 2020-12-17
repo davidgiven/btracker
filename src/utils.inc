@@ -24,5 +24,31 @@ macro key n, label
     equw label - 1
 endmacro
 
+; Converts the ASCII code in A to a nibble. Returns C set on error.
+
+.parse_digit
+{
+    cmp #'0'
+    blt bad
+
+    cmp #'9'
+    bge not_number
+    sec
+    sbc #'0'
+.good
+    clc
+    rts
+
+.not_number
+    and #lo(not(&20))
+    sec
+    sbc #'A' - 10
+    cmp #&10
+    blt good
+.bad
+    sec
+    rts
+}
+
 ; vim: ts=4 sw=4 et ft=asm
 

@@ -217,7 +217,6 @@ endmacro
 
         ; Multiply by the pitch scale.
 
-        print ~P%
         cmp #&80
         ror a       ; prime carry bit for loop; arithmetic shift
         sta ip
