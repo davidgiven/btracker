@@ -225,10 +225,18 @@
 
     .ctrl
         ldx seqindex
-        beq ret
-        dex
-        stx seqindex
+        bne not_first
+        ldx #127            ; find the last allocated sequence slot
+    .loop
         lda sequence, x
+        bpl done
+        dex
+        jmp loop
+    .not_first
+        dex
+        lda sequence, x
+    .done
+        stx seqindex
         sta patternno
         jsr draw_sequence
         jmp reset_row_pointer
@@ -249,14 +257,19 @@
     .ctrl
         ldx seqindex
         cpx #127
-        beq ret
+        beq last
         inx
         lda sequence, x
-        bmi ret
+        bpl not_last
+    .last
+        ldx #0
+    .not_last
+        lda sequence, x
         sta patternno
         stx seqindex
         jsr draw_sequence
         jmp reset_row_pointer
+
     }
 
     .key_tab
