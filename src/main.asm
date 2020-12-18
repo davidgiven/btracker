@@ -487,7 +487,7 @@ include "src/player.inc"
 ;   Frequency (Hz) = -----------------------------
 ;                     2 x register value x divider
 ;
-; For the BBC Micro, the clock is 4MHz and the divider is 15, so that
+; For the BBC Micro, the clock is 4MHz and the divider is 16, so that
 ; gives us:
 ;
 ;   freq = 4M / (32 * n)
@@ -510,7 +510,7 @@ include "src/player.inc"
     for i, 0, NUM_PITCHES-1
         midi = i/3 + 48
         freq = 440 * 2^((midi-69)/12)
-        pitch10 = 4000000 / (30 * freq)
+        pitch10 = 4000000 / (32 * freq)
         command1 = (pitch10 and &0f) or &80
         command2 = pitch10 >> 4
         org pitch_cmd_table_1 + i
@@ -520,7 +520,7 @@ include "src/player.inc"
     next
 }
 
-; And now, the *other* table: the BBC's sound chip uses a 14-bit divider for
+; And now, the *other* table: the BBC's sound chip uses a 15-bit divider for
 ; the noise channels, so if you're using any of the c2 tones, you need
 ; different pitch values in channel 2 for the noise to be in tune.
 
@@ -530,7 +530,7 @@ include "src/player.inc"
     for i, 0, NUM_PITCHES-1
         midi = i/3 + 48
         freq = 440 * 2^((midi-69)/12)
-        pitch10 = 4000000 / (28 * freq)
+        pitch10 = 4000000 / (30 * freq)
         command1 = (pitch10 and &0f) or &80
         command2 = pitch10 >> 4
         org drum_pitch_cmd_table_1 + i
