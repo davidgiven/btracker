@@ -104,6 +104,7 @@ guard &9f
 .playing                equb 0    ; are we playing or not?
 .looping                equb 0    ; are we looping the current pattern or not?
 .mute                   equb 0, 0, 0, 0 ; whether this channel is muted
+.skippattern            equb 0    ; has a N command been seen?
 
 ; Tone editor variables
 
@@ -366,6 +367,11 @@ include "src/player.inc"
     sta volume, x
     jmp next
 
+.next_pattern_command
+    ; Skips the to next pattern
+    dec skippattern
+    jmp next
+
 .*play_current_note
     jsr reset_row_pointer
     ldx #3              ; channel
@@ -385,6 +391,8 @@ include "src/player.inc"
     beq pitchbend_command
     cmp #FIRST_COMMAND + ('V' - 'A')
     beq volume_command
+    cmp #FIRST_COMMAND + ('N' - 'A')
+    beq next_pattern_command
 .done
     jmp next
 

@@ -7,7 +7,14 @@
     jsr setup_screen_for_pattern_editor
 .current_note_has_changed
     jsr draw_sequence
+
+    lda #0
+    sta skippattern
     jsr play_current_note
+    lda skippattern
+    and playing
+    bne advance_to_next_pattern
+
 .main_loop
     jsr draw_screen
     jsr cursor_on
@@ -35,6 +42,7 @@
     cpx patternlength
     blt nowrap
 
+.advance_to_next_pattern
     bit looping
     bne no_advance
     ldy seqindex
