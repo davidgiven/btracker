@@ -220,6 +220,7 @@ endmacro
         cmp #&80
         ror a       ; prime carry bit for loop; arithmetic shift
         sta ip
+        lda #0
         ldy #8
     .mulloop
         bcc noadd
