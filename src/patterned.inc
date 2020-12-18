@@ -15,9 +15,11 @@
     ; Play the appropriate number of ticks of music.
 
 .playloop
-    lda #KBD_IRQ
-    bit SHEILA+SYSTEM_VIA+VIA_IFR
-    bne keypress
+    lda #&81        ; check for a key
+    ldx #0
+    ldy #0
+    jsr OSBYTE
+    bcc keypress
 
     lda tickcount
     bpl playloop
@@ -55,7 +57,6 @@
     jmp current_note_has_changed
 
 .keypress
-    cli
     jsr do_patterneditor_keypress
     jmp current_note_has_changed
 }
@@ -64,12 +65,6 @@
 
 .do_patterneditor_keypress
 {
-    lda #&81
-    ldx #0
-    ldy #0
-    jsr OSBYTE
-    bcs ret
-
     txa
     key_lookup key_table
 
@@ -590,7 +585,7 @@
     and #&03
     beq pitch
     cmp #1
-    beq octave
+    beq pitch
     cmp #2
     beq tone
     .volume
@@ -675,19 +670,6 @@
         sta (rowptr), y
     .nochange
         rts
-    }
-
-    .octave
-    {
-        lda (rowptr), y
-        cmp #FIRST_COMMAND
-        bge nochange
-        txa
-        bmi negative
-        lda #12*3
-        jmp change_pitch_up
-    .negative
-        lda #12*3
     }
     .change_pitch_down
     {
