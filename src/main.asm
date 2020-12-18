@@ -359,6 +359,13 @@ include "src/player.inc"
     sta dpitch, x
     jmp next
 
+.volume_command
+    ; Sets master volume to the parameter byte.
+    lda (rowptr), y
+    and #&f
+    sta volume, x
+    jmp next
+
 .*play_current_note
     jsr reset_row_pointer
     ldx #3              ; channel
@@ -376,6 +383,8 @@ include "src/player.inc"
     beq off_command
     cmp #FIRST_COMMAND + ('P' - 'A')
     beq pitchbend_command
+    cmp #FIRST_COMMAND + ('V' - 'A')
+    beq volume_command
 .done
     jmp next
 
