@@ -31,7 +31,7 @@ endmacro
     cmp #'0'
     blt bad
 
-    cmp #'9'
+    cmp #'9'+1
     bge not_number
     sec
     sbc #'0'
