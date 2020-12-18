@@ -197,20 +197,20 @@ endmacro
 
     ; Fetch the pointer to the sample data.
 
+    txa
+    pha
     tya
-    asl a
-    rol a
-    sta iw+0        ; low byte of sample data address
-
-    tya
-    lsr a
-    clc
-    adc #hi(TONE_DATA)
-    sta iw+1        ; high byte of sample data address
+    jsr get_tone_data
+    sta iw+0
+    stx iw+1
+    pla
+    tax
 
     ; Compute pitch.
 
     {
+        lda pitchscale, y
+        sta iq
         ldy samplecount, x
         clc
         lda (iw), y
@@ -224,7 +224,7 @@ endmacro
     .mulloop
         bcc noadd
         clc
-        adc pitchscale, x
+        adc iq
     .noadd
         ror a
         ror ip

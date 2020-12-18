@@ -261,16 +261,10 @@ EDIT_VOLUME = 6
         cmp #&10
         bge out_of_range
 
-        sta p                   ; destination tone
-        asl a
-        rol a
-        sta w+0                 ; low byte of destination sample data address
-
-        lda p
-        lsr a
-        clc
-        adc #hi(TONE_DATA)
-        sta w+1                 ; high byte of sample data address
+        sta p
+        jsr get_tone_data
+        sta w+0                 ; destination address
+        stx w+1
 
         ; Copy the sample data
 
@@ -327,16 +321,9 @@ EDIT_VOLUME = 6
         ; Fetch the pointer to the sample data.
 
         lda edittone
-        asl a
-        rol a
-        sta editsampledata+0 ; low byte of sample data address
-
-        lda edittone
-        lsr a
-        clc
-        adc #hi(TONE_DATA)
-        sta editsampledata+1 ; high byte of sample data address
-
+        jsr get_tone_data
+        sta editsampledata+0
+        stx editsampledata+1
         rts
     }
 
@@ -356,6 +343,7 @@ EDIT_VOLUME = 6
 
         lda #40-1
         jsr advance_scrptr
+        ldx edittone
         lda pitchscale, x
         jsr print_h8
 
