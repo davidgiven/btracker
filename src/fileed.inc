@@ -55,12 +55,12 @@
 
     jsr clear_all_data
 
-    ldx #osfileblock_end - osfileblock
+    ldx #osfileblock_end - osfileblock - 1
 .loop
     lda osfileblock, x
     sta BUFFER1, x
     dex
-    bne loop
+    bpl loop
 
     lda #&ff ; load
     ldx #lo(BUFFER1)
@@ -98,12 +98,12 @@
     jsr OSWRCH
     jsr cursor_on
 
-    ldx #osfileblock_end - osfileblock
+    ldx #osfileblock_end - osfileblock - 1
 .loop
     lda osfileblock, x
     sta BUFFER1, x
     dex
-    bne loop
+    bpl loop
 
     lda numpatterns
     clc
