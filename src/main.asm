@@ -47,7 +47,7 @@ BUFFER1     = &500 ; and another one
 SEQUENCE_LENGTH = 128
 NUM_STEPS = 32
 NOTE_LENGTH = 2 ; pitch, volume/tone; or: command, param
-MAX_PATTERNS = 72
+MAX_PATTERNS = 70
 NUM_VOICES = 4
 TONE_SAMPLES = 64
 
@@ -140,7 +140,7 @@ macro incw label
 .t
 endmacro
 
-org &1100
+org &1300
 guard MUSIC_DATA
 
 ; --- Main program ----------------------------------------------------------
