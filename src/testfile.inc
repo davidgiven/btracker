@@ -56,67 +56,16 @@ OFF = FIRST_COMMAND + ('O' - 'A')
 clear MUSIC_DATA, &7c00
 guard &7c00
 org MUSIC_DATA
-    ; Header
-.sequence
-    equb 0
-    for i, 1, 127
-        equb &ff
-    next
 
-.tempo          equb 12
-.patternlength  equb &1f
-.numpatterns    equb 0
-.sequencelength equb 1
-.samplespeed    equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-.pitchscale     equb 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-.repeatstart    equb 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-.repeatend      equb 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-
-; Tone information. All zeros.
-
-org TONE_DATA
-
-    for i, 0, 63
-        equb 0
-    next
-
-; Stolen from https://www.youtube.com/watch?v=gUGlMhhasno
-
-    ; Pattern 0
-
-org PATTERN_DATA + 0*&100
-    equb OFF,   &0f, OFF,   &0f, OFF, &0f, OFF, &0f
-    equb BLANK, 0,   OFF,   &0e, BLANK, 0, BLANK, 0
-    equb G_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
-    equb G_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
-    equb F_1,   &0f, BLANK, &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   BLANK, &0e, BLANK, 0, BLANK, 0
-    equb G_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
-    equb OFF,   0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb AS_1,  &0f, AS_0,  &0e, BLANK, 0, BLANK, 0
-    equb AS_1,  &0f, G_0,   &0e, BLANK, 0, BLANK, 0
-    equb A_1,   &0f, C_1,   &0e, BLANK, 0, BLANK, 0
-    equb OFF,   0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb G_1,   &0f, F_0,   &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb F_1,   &0f, OFF,   &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb D_1,   &0f, AS_0,  &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb OFF,   0,   D_1,   &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb D_1,   &0f, F_0,   &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb OFF,   0,   OFF,   &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb G_1,   &0f, F_0,   &0e, BLANK, 0, BLANK, 0
-    equb D_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
-    equb E_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
-    equb F_1,   &0f, BLANK, &0e, BLANK, 0, BLANK, 0
-    equb F_1,   &0f, G_0,   &0e, BLANK, 0, BLANK, 0
-    equb E_1,   &0f, AS_0,  &0e, BLANK, 0, BLANK, 0
-    equb BLANK, 0,   G_0,   &0e, BLANK, 0, BLANK, 0
+.sequence       skip 128
+.tempo          skip 1
+.patternlength  skip 1
+.numpatterns    skip 1
+.sequencelength skip 1
+.samplespeed    skip 16
+.pitchscale     skip 16
+.repeatstart    skip 16
+.repeatend      skip 16
 
 ; vim: sw=4 ts=4 et ft=asm
 
