@@ -12,6 +12,10 @@ delightfully termed 'noise'. These were cheap and cheerful and pretty common in
 eight-bit computers of the day. b-tracker allows you to write music for one of
 these, _on_ a BBC Micro.
 
+[Try it for yourself via
+jsbeeb!](https://bbc.godbolt.org/?&disc1=https://cowlark.com/btracker/btracker.ssd)
+Press SHIFT+F12 to boot, and then load the file `DEBRIS`.
+
 It features:
 
 - 70 32-step patterns
