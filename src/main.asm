@@ -372,6 +372,11 @@ include "src/player.inc"
     dec skippattern
     jmp next
 
+.stop_playing_command
+    lda #0
+    sta playing
+    jmp next
+
 .*play_current_note
     jsr reset_row_pointer
     ldx #3              ; channel
@@ -393,6 +398,8 @@ include "src/player.inc"
     beq volume_command
     cmp #FIRST_COMMAND + ('N' - 'A')
     beq next_pattern_command
+    cmp #FIRST_COMMAND + ('X' - 'A')
+    beq stop_playing_command
 .done
     jmp next
 
