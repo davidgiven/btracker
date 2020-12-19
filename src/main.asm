@@ -233,7 +233,7 @@ include "src/player.inc"
     jsr OSBYTE
 
     lda #225        ; function keys
-    ldx #160        ; ...make character codes
+    ldx #128        ; ...make character codes
     jmp OSBYTE
 
 .set_cooked_keyboard
@@ -247,7 +247,7 @@ include "src/player.inc"
     jsr OSBYTE
 
     lda #225        ; function keys
-    ldx #0          ; ...are function keys
+    ldx #1          ; ...are function keys
     jmp OSBYTE
 
 .star_command

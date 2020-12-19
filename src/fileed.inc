@@ -17,8 +17,8 @@
     rts
 
 .key_table
-    key 162, pattern_editor
-    key 163, tone_editor
+    key 130, pattern_editor
+    key 131, tone_editor
     key 'N', new_file
     key 'L', load_file
     key 'S', save_file

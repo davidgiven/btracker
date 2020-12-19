@@ -103,8 +103,8 @@
     rts
 
     .key_table
-        key 161, file_editor
-        key 163, tone_editor
+        key 129, file_editor
+        key 131, tone_editor
         key 139, key_up
         key 138, key_down
         key 136, key_left
