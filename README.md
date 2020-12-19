@@ -12,8 +12,12 @@ delightfully termed 'noise'. These were cheap and cheerful and pretty common in
 eight-bit computers of the day. b-tracker allows you to write music for one of
 these, _on_ a BBC Micro.
 
-[Try it for yourself via
-jsbeeb!](https://bbc.godbolt.org/?&disc1=https://cowlark.com/btracker/btracker.ssd)
+<center>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/0QoihOxzcAo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</center>
+
+[Or, try it for yourself via
+jsbeeb emulation!](https://bbc.godbolt.org/?&disc1=https://cowlark.com/btracker/btracker.ssd)
 Press SHIFT+F12 to boot, and then load the file `DEBRIS`.
 
 It features:
@@ -27,6 +31,7 @@ It features:
   - 64 individually controllable volume and pitch steps each
   - 200Hz resolution
   - 'graphic' user interface
+- will run on stock BBC B or BBC Master (haven't tried a Compact)
 - noise channel is tuned to the tone channels
 
 Unlike traditional trackers, which were designed for machines with more memory
