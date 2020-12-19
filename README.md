@@ -12,9 +12,7 @@ delightfully termed 'noise'. These were cheap and cheerful and pretty common in
 eight-bit computers of the day. b-tracker allows you to write music for one of
 these, _on_ a BBC Micro.
 
-<center>
 [![Youtube link](http://img.youtube.com/vi/0QoihOxzcAo/0.jpg)](http://www.youtube.com/watch?v=0QoihOxzcAo "b-tracker on Youtube")
-</center>
 
 [Or, try it for yourself via
 jsbeeb emulation!](https://bbc.godbolt.org/?&disc1=https://cowlark.com/btracker/btracker.ssd)
