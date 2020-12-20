@@ -14,8 +14,8 @@ these, _on_ a BBC Micro.
 
 [![Youtube link](http://img.youtube.com/vi/0QoihOxzcAo/0.jpg)](http://www.youtube.com/watch?v=0QoihOxzcAo "b-tracker on Youtube")
 
-[Or, try it for yourself via
-jsbeeb emulation!](https://bbc.godbolt.org/?&disc1=https://cowlark.com/btracker/btracker.ssd)
+Click to play on Youtube. [Or, try it for yourself via jsbeeb
+emulation!](https://bbc.godbolt.org/?&disc1=https://cowlark.com/btracker/btracker.ssd)
 Press SHIFT+F12 to boot, and then load the file `DEBRIS`.
 
 It features:
